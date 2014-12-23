@@ -61,14 +61,14 @@ shared_ptr<Element> createOgreHead(const std::string& name, bool useBox=false) {
     PhysicsBody::PhysicsData headData;
     auto meshShapeConv = BtOgre::StaticMeshToShapeConverter(headEnt);
     if (useBox)
-        headData.shape = meshShapeConv.createBox();
+        headData.shape = meshShapeConv.createConvex();
     else
-        headData.shape = meshShapeConv.createSphere();
+        headData.shape = meshShapeConv.createConvex();
     headData.mass = 80;
     headData.collision_group = CollisionGroup::HEADS;
     headData.collides_with = CollisionGroup::WALLS | CollisionGroup::HEADS;
     head->AddComponent(make_shared<PhysicsBody>(*ourscene->physics(), headData));
-    head->component<Body>()->set_damping(.4, .4);
+    //head->component<Body>()->set_damping(.4, .4);
     head->component<Body>()->Scale(.25,.25,.25);
     return head;
 }
@@ -143,7 +143,7 @@ int main(int argc, char* argv[]) {
             move.y = 0.0;
             move.normalise();
 
-            body2->Move((move * 10));
+            body2->Move((move * 5));
         }));
 
         ourscene->event_handler().AddListener<ugdk::input::KeyPressedEvent>(
