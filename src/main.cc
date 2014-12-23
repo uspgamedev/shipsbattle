@@ -54,7 +54,7 @@ shared_ptr<Element> createOgreHead(const std::string& name, bool useBox=false) {
     // Element
     auto head = ourscene->AddElement();
     // View
-    auto headEnt = mSceneMgr->createEntity(name, "Cube.mesh");
+    auto headEnt = mSceneMgr->createEntity(name, "ogrehead.mesh");
     head->AddComponent(make_shared<View>());
     head->component<View>()->AddEntity(headEnt);
     // Body
@@ -69,6 +69,7 @@ shared_ptr<Element> createOgreHead(const std::string& name, bool useBox=false) {
     headData.collides_with = CollisionGroup::WALLS | CollisionGroup::HEADS;
     head->AddComponent(make_shared<PhysicsBody>(*ourscene->physics(), headData));
     head->component<Body>()->set_damping(.4, .4);
+    head->component<Body>()->Scale(.25,.25,.25);
     return head;
 }
 
@@ -99,6 +100,7 @@ shared_ptr<Element> createWall(const std::string& name, const Ogre::Vector3& dir
 int main(int argc, char* argv[]) {
     ugdk::system::Configuration config;
     config.base_path = "assets/";
+    config.windows_list.front().title = "Testando Porra";
     ugdk::system::Initialize(config);
     ourscene = new ugdk::action::mode3d::Scene3D;
     
