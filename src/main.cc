@@ -68,7 +68,7 @@ shared_ptr<Element> createOgreHead(const std::string& name, bool useBox=false) {
     headData.collision_group = CollisionGroup::HEADS;
     headData.collides_with = CollisionGroup::WALLS | CollisionGroup::HEADS;
     head->AddComponent(make_shared<PhysicsBody>(*ourscene->physics(), headData));
-    //head->component<Body>()->set_damping(.4, .4);
+    head->component<Body>()->set_damping(.1, .1);
     head->component<Body>()->Scale(.25,.25,.25);
     return head;
 }
@@ -102,7 +102,7 @@ int main(int argc, char* argv[]) {
     config.base_path = "assets/";
     config.windows_list.front().title = "Testando Porra";
     ugdk::system::Initialize(config);
-    ourscene = new ugdk::action::mode3d::Scene3D;
+    ourscene = new ugdk::action::mode3d::Scene3D(btVector3(0.0, 0.0, 0.0));
     
     ourscene->physics()->set_debug_draw_enabled(true);
     ourscene->ShowFrameStats();
@@ -123,7 +123,7 @@ int main(int argc, char* argv[]) {
         ourscene->camera()->SetParameters(Ogre::Vector3::ZERO, 5000);
         ourscene->camera()->SetDistance(100);
 
-        createWall("ground", Ogre::Vector3::UNIT_Y, -(AREA_RANGE / 2));
+        //createWall("ground", Ogre::Vector3::UNIT_Y, -(AREA_RANGE / 2));
         
         ourscene->AddTask(ugdk::system::Task(
         [body2](double dt) {
@@ -140,10 +140,9 @@ int main(int argc, char* argv[]) {
 
             move.normalise();
             move = ourscene->camera()->actual_orientation() * move;
-            move.y = 0.0;
             move.normalise();
 
-            body2->Move((move * 5));
+            body2->Move((move * 15));
         }));
 
         ourscene->event_handler().AddListener<ugdk::input::KeyPressedEvent>(
