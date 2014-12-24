@@ -7,6 +7,8 @@ set(SHIPSBATTLE_SRC
 shipsbattle/main.cc
 shipsbattle/components/spacedust.h
 shipsbattle/components/spacedust.cc
+shipsbattle/components/playercontroller.h
+shipsbattle/components/playercontroller.cc
 )
 
 include_directories (${CMAKE_CURRENT_SOURCE_DIR})

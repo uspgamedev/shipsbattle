@@ -1,8 +1,6 @@
 
 #include <ugdk/system/engine.h>
 #include <ugdk/desktop/module.h>
-#include <ugdk/input/events.h>
-#include <ugdk/input/module.h>
 #include <ugdk/desktop/3D/manager.h>
 #include <ugdk/action/3D/camera.h>
 #include <ugdk/action/3D/element.h>
@@ -10,9 +8,11 @@
 #include <ugdk/action/3D/physics.h>
 #include <ugdk/action/3D/component/physicsbody.h>
 #include <ugdk/action/3D/component/view.h>
+
+#include <shipsbattle/components/spacedust.h>
+#include <shipsbattle/components/playercontroller.h>
+
 #include <BtOgreGP.h>
-#include <memory>
-#include <iostream>
 
 #include <OgreCamera.h>
 #include <OgreEntity.h>
@@ -24,7 +24,8 @@
 #include <OgreConfigFile.h>
 #include <OgreMeshManager.h>
 
-#include <shipsbattle/components/spacedust.h>
+#include <memory>
+#include <iostream>
 
 #define AREA_RANGE 200.0
 
@@ -42,6 +43,7 @@ using ugdk::action::mode3d::component::CollisionAction;
 using ugdk::action::mode3d::component::ElementPtr;
 using ugdk::action::mode3d::component::ManifoldPointVector;
 using shipsbattle::components::SpaceDust;
+using shipsbattle::components::PlayerController;
 
 ugdk::action::mode3d::Scene3D *ourscene;
 
@@ -95,9 +97,10 @@ int main(int argc, char* argv[]) {
         weak_ptr<Element> head2 = createOgreHead("Head2", true);
         auto body2 = head2.lock()->component<Body>();
         body2->Translate(0, 0, 80);
-        body2->set_angular_factor(0.0, 0.0, 0.0);
+        //body2->set_angular_factor(1.0, 1.0, 0.0);
 
         head2.lock()->AddComponent(make_shared<SpaceDust>());
+        head2.lock()->AddComponent(make_shared<PlayerController>());
 
         body2->AddCollisionAction(CollisionGroup::HEADS, 
         [](const ElementPtr& self, const ElementPtr& target, const ManifoldPointVector& pts) {
@@ -110,42 +113,7 @@ int main(int argc, char* argv[]) {
 
         ourscene->manager()->setSkyBox(true, "Backgrounds/Nebula1");
         
-        ourscene->AddTask(ugdk::system::Task(
-        [body2](double dt) {
-            auto& keyboard = ugdk::input::manager()->keyboard();
-            Ogre::Vector3 move = Ogre::Vector3::ZERO;
-            if (keyboard.IsDown(ugdk::input::Scancode::D))
-                move.x += 1.0;
-            else if (keyboard.IsDown(ugdk::input::Scancode::A))
-                move.x += -1.0;
-            if (keyboard.IsDown(ugdk::input::Scancode::W))
-                move.z += -1.0;
-            else if (keyboard.IsDown(ugdk::input::Scancode::S))
-                move.z += 1.0;
-
-            move.normalise();
-            move = ourscene->camera()->actual_orientation() * move;
-            move.normalise();
-            
-            body2->Move((move * 15));
-        }));
-
-        ourscene->event_handler().AddListener<ugdk::input::KeyPressedEvent>(
-            [] (const ugdk::input::KeyPressedEvent& ev) -> void {
-            if (ev.scancode == ugdk::input::Scancode::ESCAPE)
-                ourscene->Finish();
-            else if (ev.scancode == ugdk::input::Scancode::NUMPAD_1)
-                ourscene->physics()->set_debug_draw_enabled(!ourscene->physics()->debug_draw_enabled());
-            });
-        ourscene->event_handler().AddListener<ugdk::input::MouseMotionEvent>(
-            [] (const ugdk::input::MouseMotionEvent& ev) -> void {
-                ourscene->camera()->Rotate(-ev.motion.x, -ev.motion.y);
-            });
-        ourscene->event_handler().AddListener<ugdk::input::MouseWheelEvent>(
-            [](const ugdk::input::MouseWheelEvent& ev) -> void {
-            ourscene->camera()->SetDistance(ourscene->camera()->GetDistance() + ev.scroll.y * 10);
-        });
-
+        
         ourscene->manager()->setAmbientLight(Ogre::ColourValue(.7, .7, .7));
 
         ugdk::system::PushScene(unique_ptr<ugdk::action::Scene>(ourscene));
