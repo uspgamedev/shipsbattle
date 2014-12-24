@@ -54,7 +54,9 @@ shared_ptr<Element> createOgreHead(const std::string& name, bool useBox=false) {
     // Element
     auto head = ourscene->AddElement();
     // View
-    auto headEnt = mSceneMgr->createEntity(name, "ogrehead.mesh");
+    auto headEnt = mSceneMgr->createEntity(name, "AerOmar.mesh");
+    auto headSize = headEnt->getMesh()->getBounds().getSize();
+    cout << name << " size: (" << headSize.x << ", " << headSize.y << ", " << headSize.z << ") - radius: " << headEnt->getBoundingRadius() << endl;
     head->AddComponent(make_shared<View>());
     head->component<View>()->AddEntity(headEnt);
     // Body
@@ -69,38 +71,14 @@ shared_ptr<Element> createOgreHead(const std::string& name, bool useBox=false) {
     headData.collides_with = CollisionGroup::WALLS | CollisionGroup::HEADS;
     head->AddComponent(make_shared<PhysicsBody>(*ourscene->physics(), headData));
     head->component<Body>()->set_damping(.1, .1);
-    head->component<Body>()->Scale(.25,.25,.25);
+    head->component<Body>()->Scale(20.0,20.0,20.0);
     return head;
-}
-
-shared_ptr<Element> createWall(const std::string& name, const Ogre::Vector3& dir, double dist, double width = AREA_RANGE, double height = AREA_RANGE) {
-    Ogre::SceneManager *mSceneMgr = ourscene->manager();
-    // Element
-    auto wall = ourscene->AddElement();
-    // View
-    Ogre::Plane plane(dir, dist);
-    Ogre::MeshManager::getSingleton().createPlane(name, Ogre::ResourceGroupManager::DEFAULT_RESOURCE_GROUP_NAME,
-        plane, width, height, 5, 5, true, 1, 5, 5, dir.perpendicular());
-    const std::string wat = name + "Entity";
-    Ogre::Entity* wallEnt = mSceneMgr->createEntity(wat, name);
-    wallEnt->setMaterialName("Ogre/Tusks");
-    wall->AddComponent(make_shared<View>());
-    wall->component<View>()->AddEntity(wallEnt);
-    // Body
-    PhysicsBody::PhysicsData wallData;
-    wallData.shape = new btStaticPlaneShape(btVector3(dir.x, dir.y, dir.z), dist);
-    wallData.mass = 0;
-    wallData.collision_group = CollisionGroup::WALLS;
-    wallData.collides_with = CollisionGroup::HEADS;
-    wall->AddComponent(make_shared<PhysicsBody>(*ourscene->physics(), wallData));
-    wall->component<Body>()->set_friction(1.7);
-    return wall;
 }
 
 int main(int argc, char* argv[]) {
     ugdk::system::Configuration config;
     config.base_path = "assets/";
-    config.windows_list.front().title = "Testando Porra";
+    config.windows_list.front().title = "Ships Battle";
     ugdk::system::Initialize(config);
     ourscene = new ugdk::action::mode3d::Scene3D(btVector3(0.0, 0.0, 0.0));
     
@@ -123,7 +101,7 @@ int main(int argc, char* argv[]) {
         ourscene->camera()->SetParameters(Ogre::Vector3::ZERO, 5000);
         ourscene->camera()->SetDistance(100);
 
-        //createWall("ground", Ogre::Vector3::UNIT_Y, -(AREA_RANGE / 2));
+        ourscene->manager()->setSkyBox(true, "Backgrounds/Nebula1");
         
         ourscene->AddTask(ugdk::system::Task(
         [body2](double dt) {
@@ -141,7 +119,7 @@ int main(int argc, char* argv[]) {
             move.normalise();
             move = ourscene->camera()->actual_orientation() * move;
             move.normalise();
-
+            
             body2->Move((move * 15));
         }));
 
