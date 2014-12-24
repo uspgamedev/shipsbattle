@@ -76,7 +76,7 @@ shared_ptr<Element> createOgreHead(const std::string& name, bool useBox=false) {
     headData.collides_with = CollisionGroup::WALLS | CollisionGroup::HEADS;
     head->AddComponent(make_shared<PhysicsBody>(*ourscene->physics(), headData));
     head->component<Body>()->set_damping(.1, .1);
-    head->component<Body>()->Scale(20.0,20.0,20.0);
+    //head->component<Body>()->Scale(10.0,10.0,10.0);
     return head;
 }
 
@@ -88,8 +88,6 @@ int main(int argc, char* argv[]) {
     ugdk::system::Initialize(config);
     
     ourscene = new ugdk::action::mode3d::Scene3D(btVector3(0.0, 0.0, 0.0));
-    
-    ourscene->physics()->set_debug_draw_enabled(true);
     ourscene->ShowFrameStats();
 
     {
@@ -107,8 +105,8 @@ int main(int argc, char* argv[]) {
         });
 
         ourscene->camera()->AttachTo(*head2.lock());
-        ourscene->camera()->SetParameters(Ogre::Vector3::ZERO, 5000);
-        ourscene->camera()->SetDistance(100);
+        ourscene->camera()->SetParameters(Ogre::Vector3::ZERO, 100);
+        ourscene->camera()->SetDistance(10);
 
         ourscene->manager()->setSkyBox(true, "Backgrounds/Nebula1");
         
@@ -134,15 +132,21 @@ int main(int argc, char* argv[]) {
 
         ourscene->event_handler().AddListener<ugdk::input::KeyPressedEvent>(
             [] (const ugdk::input::KeyPressedEvent& ev) -> void {
-                if (ev.scancode == ugdk::input::Scancode::ESCAPE)
-                    ourscene->Finish();
+            if (ev.scancode == ugdk::input::Scancode::ESCAPE)
+                ourscene->Finish();
+            else if (ev.scancode == ugdk::input::Scancode::NUMPAD_1)
+                ourscene->physics()->set_debug_draw_enabled(!ourscene->physics()->debug_draw_enabled());
             });
         ourscene->event_handler().AddListener<ugdk::input::MouseMotionEvent>(
             [] (const ugdk::input::MouseMotionEvent& ev) -> void {
                 ourscene->camera()->Rotate(-ev.motion.x, -ev.motion.y);
             });
+        ourscene->event_handler().AddListener<ugdk::input::MouseWheelEvent>(
+            [](const ugdk::input::MouseWheelEvent& ev) -> void {
+            ourscene->camera()->SetDistance(ourscene->camera()->GetDistance() + ev.scroll.y * 10);
+        });
 
-        ourscene->manager()->setAmbientLight(Ogre::ColourValue(0.7, .7, .7));
+        ourscene->manager()->setAmbientLight(Ogre::ColourValue(.7, .7, .7));
 
         ugdk::system::PushScene(unique_ptr<ugdk::action::Scene>(ourscene));
 
