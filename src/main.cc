@@ -1,8 +1,10 @@
 
 #include <ugdk/system/engine.h>
-#include <ugdk/action/3D/camera.h>
+#include <ugdk/desktop/module.h>
 #include <ugdk/input/events.h>
 #include <ugdk/input/module.h>
+#include <ugdk/desktop/3D/manager.h>
+#include <ugdk/action/3D/camera.h>
 #include <ugdk/action/3D/element.h>
 #include <ugdk/action/3D/scene3d.h>
 #include <ugdk/action/3D/physics.h>
@@ -79,7 +81,10 @@ int main(int argc, char* argv[]) {
     ugdk::system::Configuration config;
     config.base_path = "assets/";
     config.windows_list.front().title = "Ships Battle";
+    config.ogre_plugins.push_back("Plugin_ParticleFX");
     ugdk::system::Initialize(config);
+    
+
     ourscene = new ugdk::action::mode3d::Scene3D(btVector3(0.0, 0.0, 0.0));
     
     ourscene->physics()->set_debug_draw_enabled(true);
@@ -102,6 +107,49 @@ int main(int argc, char* argv[]) {
         ourscene->camera()->SetDistance(100);
 
         ourscene->manager()->setSkyBox(true, "Backgrounds/Nebula1");
+
+        auto ps = ourscene->manager()->createParticleSystem("SpaceDust", "SpaceEffects/Dust");
+        head2.lock()->node().attachObject(ps);
+        ourscene->AddTask(ugdk::system::Task(
+        [ps](double dt) {
+            const float maxDist = 250.0;
+            const float mirrorDist = maxDist*0.99;
+            const float dimFactor = 0.8*0.005*0.005;
+            const float maxDist2 = maxDist*maxDist;
+            Ogre::Camera* cam = ourscene->camera()->camera();
+            const Ogre::Vector3& camPos = cam->getRealPosition();
+
+            const float twiceMaxDist = 2 * maxDist;
+
+            Ogre::ParticleIterator pit = ps->_getIterator();
+
+            while (!pit.end())
+            {
+                Ogre::Particle* particle = pit.getNext();
+                Ogre::Vector3& pos = particle->position;
+                particle->timeToLive = 999999.0f;
+
+                // position particles near camera
+                // (keep moving them toward camera until within range)
+                while (pos.x - camPos.x > maxDist)
+                    pos.x -= twiceMaxDist;
+                while (pos.x - camPos.x < -maxDist)
+                    pos.x += twiceMaxDist;
+                while (pos.y - camPos.y > maxDist)
+                    pos.y -= twiceMaxDist;
+                while (pos.y - camPos.y < -maxDist)
+                    pos.y += twiceMaxDist;
+                while (pos.z - camPos.z > maxDist)
+                    pos.z -= twiceMaxDist;
+                while (pos.z - camPos.z < -maxDist)
+                    pos.z += twiceMaxDist;
+
+                Ogre::Vector3 pDir = pos - camPos;
+                float dist = pDir.squaredLength();
+                float dim = dist*dimFactor;
+                particle->setDimensions(dim, dim);
+            }
+        }));
         
         ourscene->AddTask(ugdk::system::Task(
         [body2](double dt) {
