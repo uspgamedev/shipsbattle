@@ -9,6 +9,8 @@ shipsbattle/components/spacedust.h
 shipsbattle/components/spacedust.cc
 shipsbattle/components/playercontroller.h
 shipsbattle/components/playercontroller.cc
+shipsbattle/components/subsystems/shipsubsystem.h
+shipsbattle/components/subsystems/shipsubsystem.cc
 shipsbattle/objects/objecttypes.h
 shipsbattle/objects/ship.h
 shipsbattle/objects/ship.cc
