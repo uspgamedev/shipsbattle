@@ -9,6 +9,9 @@ shipsbattle/components/spacedust.h
 shipsbattle/components/spacedust.cc
 shipsbattle/components/playercontroller.h
 shipsbattle/components/playercontroller.cc
+shipsbattle/objects/objecttypes.h
+shipsbattle/objects/ship.h
+shipsbattle/objects/ship.cc
 )
 
 include_directories (${CMAKE_CURRENT_SOURCE_DIR})

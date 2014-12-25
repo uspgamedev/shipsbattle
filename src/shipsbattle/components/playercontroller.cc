@@ -88,7 +88,7 @@ void PlayerController::OnTaken() {
     });
     scene.event_handler().AddListener<ugdk::input::MouseMotionEvent>(
     [this](const ugdk::input::MouseMotionEvent& ev) -> void {
-        //this->Handle(ev);
+        this->Handle(ev);
     });
     scene.event_handler().AddListener<ugdk::input::MouseWheelEvent>(
     [this](const ugdk::input::MouseWheelEvent& ev) -> void {
