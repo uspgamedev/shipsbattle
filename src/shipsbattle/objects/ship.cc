@@ -53,7 +53,9 @@ Ship::Ship(Scene3D& scene, const string& name, const string& meshName) {
     // Hull
     Hull* hullsys = new Hull();
     SubHull* mainhull = new SubHull("MainHull");
-    mainhull->set_radius(entity->getBoundingRadius());
+    mainhull->SetVolume(entity->getBoundingRadius(), btVector3(0.0,0.0,0.0));
+    mainhull->set_max_armor_rating(50);
+    mainhull->set_armor_rating(50);
     hullsys->AddSubHull(std::shared_ptr<SubHull>(mainhull));
     ship_->AddComponent(std::shared_ptr<Hull>(hullsys));
 }
@@ -69,6 +71,9 @@ Body* Ship::body() {
 }
 View* Ship::view() {
     return ship_->component<View>();
+}
+Hull* Ship::hull() {
+    return ship_->component<Hull>();
 }
 
 

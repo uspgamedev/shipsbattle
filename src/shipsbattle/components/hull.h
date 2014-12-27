@@ -5,6 +5,12 @@
 #include <vector>
 #include <unordered_map>
 
+class btVector3;
+class btBroadphaseInterface;
+class btDefaultCollisionConfiguration;
+class btCollisionDispatcher;
+class btCollisionWorld;
+
 namespace shipsbattle {
 namespace components {
 
@@ -24,6 +30,8 @@ public:
     const std::shared_ptr<subsystems::SubHull>& GetSubHull(const std::string& name);
     size_t GetNumSubHulls() const { return subhulls_.size(); }
 
+    void TakeDamage(double dmg, double piercing, double splash_radius, const btVector3& pos);
+
 protected:
     void OnTaken() override;
 
@@ -33,6 +41,12 @@ protected:
     std::vector<std::shared_ptr<subsystems::SubHull>>    subhulls_;
     std::unordered_map<std::string, size_t>    subhull_indexes_;
     std::vector<subsystems::DamageableSystem*>  damageables_;
+
+    std::shared_ptr<btBroadphaseInterface> broadphase_;
+    std::shared_ptr<btDefaultCollisionConfiguration> config_;
+    std::shared_ptr<btCollisionDispatcher> dispatcher_;
+    std::shared_ptr<btCollisionWorld> world_;
+
 };
 
 inline std::type_index Hull::type() const {

@@ -1,8 +1,12 @@
 #ifndef SHIPSBATTLE_SUBSYSTEMS_DAMAGEABLESYSTEM_H
 #define SHIPSBATTLE_SUBSYSTEMS_DAMAGEABLESYSTEM_H
 
-#include <OgreVector3.h>
 #include <string>
+#include <memory>
+
+class btVector3;
+class btCollisionObject;
+class btSphereShape;
 
 namespace shipsbattle {
 namespace components {
@@ -34,12 +38,13 @@ public:
     /// If this subsystem is destroyed.
     bool destroyed() const { return hitpoints_ <= 0.0; }
 
+    /// Sets the collision shape of this subsystem.
+    void SetVolume(double radius, const btVector3& pos);
+    btCollisionObject* volume() const { return volume_.get(); }
     /// Position of the subsystem in the ship.
-    Ogre::Vector3 position() const { return position_; }
-    void set_position(const Ogre::Vector3& pos);
+    btVector3 position() const;
     /// Radius of the subsystem
-    double radius() const { return radius_; }
-    void set_radius(double rad) { radius_ = rad; }
+    double radius() const;
 
     /** Method to deal/fix damage to this subsystems, updating the hitpoints and armor rating 
     of this ship by a given amount. Positive amounts deal damage, negative amounts fix the system.
@@ -58,8 +63,9 @@ protected:
     double max_armor_rating_;
     double armor_rating_;
     bool required_;
-    Ogre::Vector3 position_;
-    double radius_;
+
+    std::shared_ptr<btCollisionObject> volume_;
+    std::shared_ptr<btSphereShape> shape_;
 
     void RegisterToHull(Hull* hull);
 };

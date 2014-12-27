@@ -8,6 +8,9 @@
 #include <shipsbattle/components/spacedust.h>
 #include <shipsbattle/components/playercontroller.h>
 
+#include <shipsbattle/components/hull.h>
+#include <shipsbattle/components/subsystems/subhull.h>
+
 #include <btBulletDynamicsCommon.h>
 #include <OgreSceneManager.h>
 
@@ -32,6 +35,13 @@ Ship createShip(const std::string& name) {
     return Ship(*ourscene, name, "AerOmar.mesh");
 }
 
+void AddSubHull(Ship& ship, const std::string& name, double radius, double x, double y, double z) {
+    shipsbattle::components::Hull* hull = ship.hull();
+    shipsbattle::components::subsystems::SubHull* sh = new shipsbattle::components::subsystems::SubHull(name);
+    sh->SetVolume(radius, btVector3(x, y, z));
+    hull->AddSubHull(std::shared_ptr<shipsbattle::components::subsystems::SubHull>(sh));
+}
+
 int main(int argc, char* argv[]) {
     ugdk::system::Configuration config;
     config.base_path = "assets/";
@@ -54,6 +64,24 @@ int main(int argc, char* argv[]) {
         ourscene->camera()->AttachTo(*player);
         ourscene->camera()->SetParameters(Ogre::Vector3::ZERO, 100);
         ourscene->camera()->SetDistance(10);
+
+        //AerOmar bounding box size: (3.07287, 1.06726, 6.79639) - bounding sphere radius: 3.88078
+        AddSubHull(player, "BallOrigin", 0.5, 0, 0, 0);
+        AddSubHull(player, "BallUno", 1.0, 0, 0, 1.0);
+        AddSubHull(player, "BallBottom", 0.1, 0, 0, 0.25);
+
+        ourscene->event_handler().AddListener<ugdk::input::KeyPressedEvent>(
+        [&player](const ugdk::input::KeyPressedEvent& ev) -> void {
+            if (ev.scancode == ugdk::input::Scancode::I) {
+                player.hull()->TakeDamage(-100, 0.2, 5.0, btVector3(0, 0, 3.9));
+            }
+            else if (ev.scancode == ugdk::input::Scancode::O) {
+                player.hull()->TakeDamage(100, 0.2, 1.0, btVector3(0, 0, 3.9));
+            }
+            else if (ev.scancode == ugdk::input::Scancode::P) {
+                player.hull()->TakeDamage(100, 0.2, 0.0, btVector3(0, 0, 3.9));
+            }
+        });
 
         // create Enemy ship
         Ship enemy = createShip("Enemy");
