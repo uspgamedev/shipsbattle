@@ -13,6 +13,10 @@ class View;
 }}}}
 
 namespace shipsbattle {
+namespace components {
+class Hull;
+}
+
 namespace objects {
 
 class Ship {
@@ -23,6 +27,7 @@ public:
 
     ugdk::action::mode3d::component::Body* body();
     ugdk::action::mode3d::component::View* view();
+    shipsbattle::components::Hull* hull();
     
     ugdk::action::mode3d::Element* operator->() const { return ship_; }
     ugdk::action::mode3d::Element operator*() const { return *ship_; }
