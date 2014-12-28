@@ -67,8 +67,9 @@ int main(int argc, char* argv[]) {
 
         //AerOmar bounding box size: (3.07287, 1.06726, 6.79639) - bounding sphere radius: 3.88078
         AddSubHull(player, "BallOrigin", 0.5, 0, 0, 0);
-        AddSubHull(player, "BallUno", 1.0, 0, 0, 1.0);
-        AddSubHull(player, "BallBottom", 0.1, 0, 0, 0.25);
+        //AddSubHull(player, "BallUno", 1.0, 0, 0, 1.0);
+        //AddSubHull(player, "BallBottom", 0.1, 0, 0, 0.25);
+        AddSubHull(player, "BallFront", 0.2, 0, 0, 3.7);
 
         ourscene->event_handler().AddListener<ugdk::input::KeyPressedEvent>(
         [&player](const ugdk::input::KeyPressedEvent& ev) -> void {

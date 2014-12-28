@@ -74,7 +74,7 @@ void PlayerController::Update(double dt) {
     //cout << "Rotation: (" << rotate.x << ", " << rotate.y << ", " << rotate.z << ")" << endl;
     
     body->Rotate(rotate.x, rotate.y, rotate.z);
-    body->Move(body->orientation() * Ogre::Vector3::UNIT_Z * speed_ * 50);
+    body->Move(body->orientation() * Ogre::Vector3::UNIT_Z * static_cast<Ogre::Real>(speed_) * 50);
 }
 
 void PlayerController::OnTaken() {
@@ -82,23 +82,7 @@ void PlayerController::OnTaken() {
     auto& scene = parent->scene();
 
     // set event listeners
-    scene.event_handler().AddListener<ugdk::input::KeyPressedEvent>(
-    [this](const ugdk::input::KeyPressedEvent& ev) -> void {
-        this->Handle(ev);
-    });
-    scene.event_handler().AddListener<ugdk::input::MouseMotionEvent>(
-    [this](const ugdk::input::MouseMotionEvent& ev) -> void {
-        this->Handle(ev);
-    });
-    scene.event_handler().AddListener<ugdk::input::MouseWheelEvent>(
-    [this](const ugdk::input::MouseWheelEvent& ev) -> void {
-        this->Handle(ev);
-    });
-    scene.event_handler().AddListener<ugdk::input::MouseButtonPressedEvent>(
-        [this](const ugdk::input::MouseButtonPressedEvent& ev) -> void {
-        this->Handle(ev);
-    });
-    //scene.event_handler().AddObjectListener(this);
+    scene.event_handler().AddObjectListener(this);
 
     // set update task
     scene.AddTask(ugdk::system::Task(

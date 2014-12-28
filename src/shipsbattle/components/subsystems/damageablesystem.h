@@ -64,8 +64,8 @@ protected:
     double armor_rating_;
     bool required_;
 
-    std::shared_ptr<btCollisionObject> volume_;
-    std::shared_ptr<btSphereShape> shape_;
+    std::unique_ptr<btCollisionObject> volume_;
+    std::unique_ptr<btSphereShape> shape_;
 
     void RegisterToHull(Hull* hull);
 };

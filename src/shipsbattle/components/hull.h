@@ -42,10 +42,10 @@ protected:
     std::unordered_map<std::string, size_t>    subhull_indexes_;
     std::vector<subsystems::DamageableSystem*>  damageables_;
 
-    std::shared_ptr<btBroadphaseInterface> broadphase_;
-    std::shared_ptr<btDefaultCollisionConfiguration> config_;
-    std::shared_ptr<btCollisionDispatcher> dispatcher_;
-    std::shared_ptr<btCollisionWorld> world_;
+    std::unique_ptr<btBroadphaseInterface> broadphase_;
+    std::unique_ptr<btDefaultCollisionConfiguration> config_;
+    std::unique_ptr<btCollisionDispatcher> dispatcher_;
+    std::unique_ptr<btCollisionWorld> world_;
 
 };
 

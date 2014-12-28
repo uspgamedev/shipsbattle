@@ -20,7 +20,7 @@ using ugdk::action::mode3d::component::PhysicsBody;
 using ugdk::action::mode3d::component::View;
 using ugdk::action::mode3d::component::CollisionAction;
 using ugdk::action::mode3d::component::ElementPtr;
-using ugdk::action::mode3d::component::ManifoldPointVector;
+using ugdk::action::mode3d::component::ContactPointVector;
 using shipsbattle::components::Hull;
 using shipsbattle::components::subsystems::SubHull;
 
@@ -46,16 +46,25 @@ Ship::Ship(Scene3D& scene, const string& name, const string& meshName) {
     pbody->set_damping(.5, .5);
 
     pbody->AddCollisionAction(ObjectTypes::SHIP,
-        [](const ElementPtr& self, const ElementPtr& target, const ManifoldPointVector& pts) {
-        cout << self->name() << " colidindo com " << target->name() << " (" << pts.size() << ")" << endl;
+        [](const ElementPtr& self, const ElementPtr& target, const ContactPointVector& pts) {
+        //cout << self->name() << " colidindo com " << target->name() << " (" << pts.size() << ")" << endl;
+        Ship me(self.get());
+        
+        for (auto pt : pts) {
+            double dmg = 100;
+            double piercing = 0.3;
+            double splash = 1.0;
+            me.hull()->TakeDamage(dmg, piercing, splash, pt.world_positionA - BtOgre::Convert::toBullet(me.body()->position()));
+        }
     });
 
     // Hull
     Hull* hullsys = new Hull();
     SubHull* mainhull = new SubHull("MainHull");
     mainhull->SetVolume(entity->getBoundingRadius(), btVector3(0.0,0.0,0.0));
-    mainhull->set_max_armor_rating(50);
-    mainhull->set_armor_rating(50);
+    mainhull->set_max_armor_rating(100);
+    mainhull->set_armor_rating(100);
+    mainhull->set_required(true);
     hullsys->AddSubHull(std::shared_ptr<SubHull>(mainhull));
     ship_->AddComponent(std::shared_ptr<Hull>(hullsys));
 }

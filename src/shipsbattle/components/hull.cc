@@ -84,7 +84,7 @@ struct TakeDamageCallback : public btCollisionWorld::ContactResultCallback
 
         if (sys->destroyed()) return 0;
 
-        std::cout << "TakeDamageCallback: sys=" << sys->name() << std::endl;
+        //std::cout << "TakeDamageCallback: sys=" << sys->name() << std::endl;
         sys->TakeDamage(data->dmg, data->piercing);
 
         return 0;
@@ -98,15 +98,15 @@ void Hull::TakeDamage(double dmg, double piercing, double splash_radius, const b
     HitData* hitdata = new HitData(dmg, piercing);
     hit->setUserPointer(hitdata);
 
-    std::cout << "HULL TAKE DAMAGE d/p/s/xyz: " << dmg << "/" << piercing << "/" << splash_radius;
-    std::cout << "/(" << pos.x() << ", " << pos.y() << ", " << pos.z() << ")" << std::endl;
+    //std::cout << "HULL TAKE DAMAGE d/p/s/xyz: " << dmg << "/" << piercing << "/" << splash_radius;
+    //std::cout << "/(" << pos.x() << ", " << pos.y() << ", " << pos.z() << ")" << std::endl;
 
     //TODO: para implementar ordem e peso nos sistemas pra divisao do dano, o TDC tem que simplesmente 
     // armazenar os sistemas afetados numa lista, e depois da chamada de contactTest nos tratamos dessa lista
     TakeDamageCallback tdc;
     world_->contactTest(hit, tdc);
 
-    std::cout << "FINISHED HULL TAKE DAMAGE" << std::endl;
+    //std::cout << "FINISHED HULL TAKE DAMAGE" << std::endl;
 
     delete hit->getCollisionShape();
     delete hitdata;

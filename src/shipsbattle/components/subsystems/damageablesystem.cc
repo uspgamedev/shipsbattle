@@ -28,9 +28,9 @@ void DamageableSystem::TakeDamage(double dmg, double piercing) {
         armor_dmg = -armor_dmg;
     }
 
-    std::cout << "Subsystem '" << name_ << "' damaged: " << std::endl;
-    std::cout << "  HP (r/a/chp): " << dmg << "/" << actual_dmg << "/" << hitpoints_ << std::endl;
-    std::cout << "  ARMOR (d/car/p): " << armor_dmg << "/" << armor_rating_ << "/" << piercing << std::endl;
+    //std::cout << "Subsystem '" << name_ << "' damaged: " << std::endl;
+    //std::cout << "  HP (r/a/chp): " << dmg << "/" << actual_dmg << "/" << hitpoints_ << std::endl;
+    //std::cout << "  ARMOR (d/car/p): " << armor_dmg << "/" << armor_rating_ << "/" << piercing << std::endl;
 
     armor_rating_ -= armor_dmg;
     if (armor_rating_ > max_armor_rating_) armor_rating_ = max_armor_rating_;
