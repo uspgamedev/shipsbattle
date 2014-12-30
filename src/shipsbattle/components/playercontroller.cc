@@ -1,5 +1,6 @@
 #include <shipsbattle/components/playercontroller.h>
 #include <ugdk/input/module.h>
+#include <ugdk/input/joystick.h>
 #include <ugdk/action/3D/element.h>
 #include <ugdk/action/3D/scene3d.h>
 #include <ugdk/action/3D/physics.h>
@@ -52,6 +53,28 @@ void PlayerController::Handle(const ugdk::input::MouseButtonPressedEvent& ev) {
         cout << "TARGET CYCLE" << endl;
     }
 }
+
+void PlayerController::Handle(const ugdk::input::JoystickButtonPressedEvent& ev) {
+    cout << "joystick button " << ev.button << endl;
+}
+void PlayerController::Handle(const ugdk::input::JoystickAxisEvent& ev) {
+    cout << "Axis " << ev.axis_id << " [" << ev.axis_status.Percentage() << "]" << endl;
+}
+void PlayerController::Handle(const ugdk::input::JoystickHatEvent& ev) {
+    cout << "Hat " << ev.hat_id << " (" << ev.hat_status.IsUp() << ev.hat_status.IsRight() << ev.hat_status.IsDown() << ev.hat_status.IsLeft() << ")";
+    cout << " (" << ev.hat_status.IsRightUp() << ev.hat_status.IsRightDown() << ev.hat_status.IsLeftDown() << ev.hat_status.IsLeftUp() << ")" << endl;
+}
+
+void PlayerController::Handle(const ugdk::input::JoystickConnectedEvent& ev) {
+    auto joystick = ev.joystick.lock();
+    joystick->event_handler().AddObjectListener(this);
+    cout << "Joystick [" << joystick.get() << "] [" << joystick->NumAxes() << " axis] [" << joystick->NumHats() << " hats] ["
+        << joystick->NumTrackballs() << " balls] [" << joystick->NumButtons() << " buttons]" << endl;
+}
+void PlayerController::Handle(const ugdk::input::JoystickDisconnectedEvent& ev) {
+    cout << "joystick disconnected" << endl;
+}
+
 
 void PlayerController::Update(double dt) {
     auto& keyboard = ugdk::input::manager()->keyboard();
