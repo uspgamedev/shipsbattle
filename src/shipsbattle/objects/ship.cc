@@ -44,17 +44,26 @@ Ship::Ship(Scene3D& scene, const string& name, const string& meshName) {
     PhysicsBody* pbody = new PhysicsBody(*scene.physics(), data);
     ship_->AddComponent(std::shared_ptr<PhysicsBody>(pbody));
     pbody->set_damping(.5, .5);
+    //pbody->set_restitution(0.3);
 
     pbody->AddCollisionAction(ObjectTypes::SHIP,
         [](const ElementPtr& self, const ElementPtr& target, const ContactPointVector& pts) {
         //cout << self->name() << " colidindo com " << target->name() << " (" << pts.size() << ")" << endl;
         Ship me(self.get());
+        Ship them(target.get());
         
         for (auto pt : pts) {
-            double dmg = 100;
-            double piercing = 0.3;
+            auto localPtA = pt.world_positionA - BtOgre::Convert::toBullet(me.body()->position());
+            auto localPtB = pt.world_positionB - BtOgre::Convert::toBullet(them.body()->position());
+            auto velA = me.body()->linear_velocity();// GetVelocityInPoint(BtOgre::Convert::toOgre(localPtA));
+            auto velB = them.body()->linear_velocity();// GetVelocityInPoint(BtOgre::Convert::toOgre(localPtB));
+            auto angle = velA.angleBetween(velB);
+            auto speed_diff = velA.length() - velB.length();
+            cout << me->name() << " colliding with " << them->name() << "; angle=" << angle << " (A:" << velA.length() << "/B:" << velB.length() << ")" << endl;
+            double dmg = 2;
+            double piercing = 0.5;
             double splash = 1.0;
-            me.hull()->TakeDamage(dmg, piercing, splash, pt.world_positionA - BtOgre::Convert::toBullet(me.body()->position()));
+            me.hull()->TakeDamage(dmg, piercing, splash, localPtA);
         }
     });
 
