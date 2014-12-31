@@ -12,6 +12,8 @@ shipsbattle/components/playercontroller.h
 shipsbattle/components/playercontroller.cc
 shipsbattle/components/hull.h
 shipsbattle/components/hull.cc
+shipsbattle/components/powersystem.h
+shipsbattle/components/powersystem.cc
 
 shipsbattle/objects/objecttypes.h
 shipsbattle/objects/ship.h
@@ -20,6 +22,10 @@ shipsbattle/objects/ship.cc
 shipsbattle/components/subsystems/damageablesystem.h
 shipsbattle/components/subsystems/damageablesystem.cc
 shipsbattle/components/subsystems/subhull.h
+shipsbattle/components/subsystems/powergenerator.h
+shipsbattle/components/subsystems/battery.h
+shipsbattle/components/subsystems/poweredsystem.h
+shipsbattle/components/subsystems/poweredsystem.cc
 )
 
 include_directories (${CMAKE_CURRENT_SOURCE_DIR})

@@ -2,6 +2,9 @@
 #include <shipsbattle/objects/objecttypes.h>
 #include <shipsbattle/components/hull.h>
 #include <shipsbattle/components/subsystems/subhull.h>
+#include <shipsbattle/components/powersystem.h>
+#include <shipsbattle/components/subsystems/powergenerator.h>
+#include <shipsbattle/components/subsystems/battery.h>
 #include <ugdk/action/3D/component/physicsbody.h>
 #include <ugdk/action/3D/component/view.h>
 #include <ugdk/action/3D/scene3d.h>
@@ -23,6 +26,9 @@ using ugdk::action::mode3d::component::ElementPtr;
 using ugdk::action::mode3d::component::ContactPointVector;
 using shipsbattle::components::Hull;
 using shipsbattle::components::subsystems::SubHull;
+using shipsbattle::components::PowerSystem;
+using shipsbattle::components::subsystems::PowerGenerator;
+using shipsbattle::components::subsystems::Battery;
 
 namespace shipsbattle {
 namespace objects {
@@ -44,7 +50,7 @@ Ship::Ship(Scene3D& scene, const string& name, const string& meshName) {
     PhysicsBody* pbody = new PhysicsBody(*scene.physics(), data);
     ship_->AddComponent(std::shared_ptr<PhysicsBody>(pbody));
     pbody->set_damping(.5, .5);
-    //pbody->set_restitution(0.3);
+    pbody->set_restitution(0.3);
 
     pbody->AddCollisionAction(ObjectTypes::SHIP,
         [](const ElementPtr& self, const ElementPtr& target, const ContactPointVector& pts) {
@@ -55,8 +61,8 @@ Ship::Ship(Scene3D& scene, const string& name, const string& meshName) {
         for (auto pt : pts) {
             auto localPtA = pt.world_positionA - BtOgre::Convert::toBullet(me.body()->position());
             auto localPtB = pt.world_positionB - BtOgre::Convert::toBullet(them.body()->position());
-            auto velA = me.body()->linear_velocity();// GetVelocityInPoint(BtOgre::Convert::toOgre(localPtA));
-            auto velB = them.body()->linear_velocity();// GetVelocityInPoint(BtOgre::Convert::toOgre(localPtB));
+            auto velA = me.body()->GetVelocityInPoint(BtOgre::Convert::toOgre(localPtA));
+            auto velB = them.body()->GetVelocityInPoint(BtOgre::Convert::toOgre(localPtB));
             auto angle = velA.angleBetween(velB);
             auto speed_diff = velA.length() - velB.length();
             cout << me->name() << " colliding with " << them->name() << "; angle=" << angle << " (A:" << velA.length() << "/B:" << velB.length() << ")" << endl;
@@ -64,18 +70,32 @@ Ship::Ship(Scene3D& scene, const string& name, const string& meshName) {
             double piercing = 0.5;
             double splash = 1.0;
             me.hull()->TakeDamage(dmg, piercing, splash, localPtA);
+
+            //body_->setCollisionFlags(body_->getCollisionFlags() | btCollisionObject::CF_NO_CONTACT_RESPONSE);
         }
     });
 
     // Hull
     Hull* hullsys = new Hull();
+    //due to the way we're doing damageablesystem registration, we need to add hull system before adding any
+    //subsystem to any other component system.
+    ship_->AddComponent(std::shared_ptr<Hull>(hullsys));
     SubHull* mainhull = new SubHull("MainHull");
     mainhull->SetVolume(entity->getBoundingRadius(), btVector3(0.0,0.0,0.0));
     mainhull->set_max_armor_rating(100);
     mainhull->set_armor_rating(100);
     mainhull->set_required(true);
     hullsys->AddSubHull(std::shared_ptr<SubHull>(mainhull));
-    ship_->AddComponent(std::shared_ptr<Hull>(hullsys));
+
+    // PowerSystem
+    ship_->AddComponent(std::make_shared<PowerSystem>());
+    auto power = this->power();
+    PowerGenerator* pgen = new PowerGenerator("Power Plant");
+    pgen->SetVolume(0.8, btVector3(0.0, 0.0, -1.0));
+    power->AddPowerGenerator(std::shared_ptr<PowerGenerator>(pgen));
+    Battery* bat = new Battery("Energy Cells");
+    bat->SetVolume(0.5, btVector3(0.0, 0.1, 0.7));
+    power->AddBattery(std::shared_ptr<Battery>(bat));
 }
 Ship::Ship(ugdk::action::mode3d::Element* ship) : ship_(ship) {
     //FIXME: make sure the element is a ship element.
@@ -92,6 +112,9 @@ View* Ship::view() {
 }
 Hull* Ship::hull() {
     return ship_->component<Hull>();
+}
+PowerSystem* Ship::power() {
+    return ship_->component<PowerSystem>();
 }
 
 

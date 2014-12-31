@@ -15,6 +15,7 @@ class View;
 namespace shipsbattle {
 namespace components {
 class Hull;
+class PowerSystem;
 }
 
 namespace objects {
@@ -28,6 +29,7 @@ public:
     ugdk::action::mode3d::component::Body* body();
     ugdk::action::mode3d::component::View* view();
     shipsbattle::components::Hull* hull();
+    shipsbattle::components::PowerSystem* power();
     
     ugdk::action::mode3d::Element* operator->() const { return ship_; }
     ugdk::action::mode3d::Element operator*() const { return *ship_; }

@@ -22,6 +22,7 @@ class SubHull;
 class Hull : public ugdk::action::mode3d::Component {
 public:
     Hull() {}
+    ~Hull();
 
     virtual std::type_index type() const override;
 
@@ -42,10 +43,10 @@ protected:
     std::unordered_map<std::string, size_t>    subhull_indexes_;
     std::vector<subsystems::DamageableSystem*>  damageables_;
 
-    std::unique_ptr<btBroadphaseInterface> broadphase_;
-    std::unique_ptr<btDefaultCollisionConfiguration> config_;
-    std::unique_ptr<btCollisionDispatcher> dispatcher_;
-    std::unique_ptr<btCollisionWorld> world_;
+    btBroadphaseInterface* broadphase_;
+    btDefaultCollisionConfiguration* config_;
+    btCollisionDispatcher* dispatcher_;
+    btCollisionWorld* world_;
 
 };
 

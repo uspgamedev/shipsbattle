@@ -13,14 +13,8 @@ class SubHull : public DamageableSystem {
 public:
     SubHull(const std::string& name) : DamageableSystem(name) {}
 
-    Hull* parent() const { return parent_; }
-
 protected:
     friend class components::Hull;
-
-    Hull* parent_;
-
-    void OnRegister(Hull* parent) { parent_ = parent; RegisterToHull(parent); }
 };
 
 

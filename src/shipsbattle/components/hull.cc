@@ -18,6 +18,13 @@ using shipsbattle::components::subsystems::SubHull;
 namespace shipsbattle {
 namespace components {
 
+Hull::~Hull() {
+    delete world_;
+    delete broadphase_;
+    delete dispatcher_;
+    delete config_;
+}
+
 void Hull::AddSubHull(const shared_ptr<SubHull>& subhull) {
     if (subhull_indexes_.count(subhull->name()) > 0) {
         Log(LogLevel::WARNING, "Hull System", "SubHull with name '" + subhull->name() + "' already exists in ship '" + owner()->name() + "'. Discarding this SubHull.");
@@ -25,7 +32,7 @@ void Hull::AddSubHull(const shared_ptr<SubHull>& subhull) {
     }
     subhulls_.push_back(subhull);
     subhull_indexes_[subhull->name()] = subhulls_.size() - 1;
-    subhull->OnRegister(this);
+    subhull->RegisteredTo(this);
 }
 const shared_ptr<SubHull>& Hull::GetSubHull(size_t index) {
     return subhulls_.at(index);
@@ -35,10 +42,10 @@ const shared_ptr<SubHull>& Hull::GetSubHull(const std::string& name) {
 }
 
 void Hull::OnTaken() {
-    config_.reset(new btDefaultCollisionConfiguration());
-    dispatcher_.reset(new btCollisionDispatcher(config_.get()));
-    broadphase_.reset(new btDbvtBroadphase());
-    world_.reset(new btCollisionWorld(dispatcher_.get(), broadphase_.get(), config_.get()));
+    config_ = new btDefaultCollisionConfiguration();
+    dispatcher_ = new btCollisionDispatcher(config_);
+    broadphase_ = new btDbvtBroadphase();
+    world_ = new btCollisionWorld(dispatcher_, broadphase_, config_);
     
     for (auto sys : damageables_) {
         world_->addCollisionObject(sys->volume());

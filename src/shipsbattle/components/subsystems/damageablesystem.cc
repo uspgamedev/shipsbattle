@@ -1,5 +1,6 @@
 #include <shipsbattle/components/subsystems/damageablesystem.h>
 #include <shipsbattle/components/hull.h>
+#include <ugdk/action/3D/element.h>
 
 #include <btBulletCollisionCommon.h>
 
@@ -9,10 +10,15 @@ namespace shipsbattle {
 namespace components {
 namespace subsystems {
 
-DamageableSystem::DamageableSystem(const std::string& name) : name_(name),
-    max_hitpoints_(1000), hitpoints_(1000.0), armor_rating_(0.0), required_(false)
-{
+DamageableSystem::~DamageableSystem() {
+    //delete volume_;
+    delete shape_;
+}
 
+DamageableSystem::DamageableSystem(const std::string& name) : name_(name),
+max_hitpoints_(1000), hitpoints_(1000.0), armor_rating_(0.0), required_(false), disabled_percentage_(0.25)
+{
+    SetVolume(0.1, btVector3(0.0, 0.0, 0.0));
 }
 
 void DamageableSystem::TakeDamage(double dmg, double piercing) {
@@ -45,9 +51,9 @@ void DamageableSystem::TakeDamage(double dmg, double piercing) {
 }
 
 void DamageableSystem::SetVolume(double radius, const btVector3& pos) {
-    shape_.reset(new btSphereShape(static_cast<btScalar>(radius)));
-    volume_.reset(new btCollisionObject());
-    volume_->setCollisionShape(shape_.get());
+    shape_ = new btSphereShape(static_cast<btScalar>(radius));
+    volume_ = new btCollisionObject();
+    volume_->setCollisionShape(shape_);
     //TODO: check if position is inside the ship
     volume_->setWorldTransform(btTransform(btQuaternion::getIdentity(), pos));
     volume_->setUserPointer(this);
@@ -61,8 +67,12 @@ double DamageableSystem::radius() const {
     return static_cast<double>(shape_->getRadius());
 }
 
-void DamageableSystem::RegisterToHull(Hull* hull) {
-    hull->RegisterDamageableSystem(this);
+void DamageableSystem::RegisteredTo(ugdk::action::mode3d::Component* sys) {
+    parent_ = sys;
+
+    sys->owner()->component<Hull>()->RegisterDamageableSystem(this);
+
+    this->OnRegister();
 }
 
 } // namespace subsystems
