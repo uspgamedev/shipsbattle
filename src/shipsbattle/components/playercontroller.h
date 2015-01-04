@@ -5,14 +5,6 @@
 #include <ugdk/system/eventhandler.h>
 #include <ugdk/input/events.h>
 
-namespace ugdk {
-namespace input {
-class MouseWheelEvent;
-class MouseMotionEvent;
-class KeyPressedEvent;
-}
-}
-
 namespace shipsbattle {
 namespace components {
 namespace subsystems {
@@ -64,4 +56,4 @@ inline std::type_index PlayerController::type() const {
 } // namespace components
 } // namespace shipsbattle
 
-#endif // SHIPSBATTLE_COMPONENTS_SPACEDUST_H
+#endif // SHIPSBATTLE_COMPONENTS_PLAYERCONTROLLER_H
