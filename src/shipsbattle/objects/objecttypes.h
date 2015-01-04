@@ -7,10 +7,10 @@ namespace objects {
 #define BIT(x) (1<<(x))
 enum ObjectTypes {
     SHIP = BIT(6),
-    WAT1 = BIT(7),
-    WAT2 = BIT(8),
-    WAT3 = BIT(9),
-    WAT4 = BIT(10)
+    PROJECTILE = BIT(7),
+    //WAT2 = BIT(8),
+    //WAT3 = BIT(9),
+    //WAT4 = BIT(10)
 };
 
 
