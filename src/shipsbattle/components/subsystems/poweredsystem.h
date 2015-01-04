@@ -11,8 +11,9 @@ namespace subsystems {
 
 class PoweredSystem : public DamageableSystem {
 public:
-    
+    /** If this systems needs to recharge, return how much energy it requires to full charge. <=0 means no need. */
     virtual double NeedsRecharge() = 0;
+    /** Called by PowerSystem when energy is given to recharge this system. */
     virtual void OnRecharge(double energy) = 0;
 
     /** If this subsystem is activated or not */

@@ -1,5 +1,6 @@
 #include <shipsbattle/components/hull.h>
 #include <shipsbattle/components/subsystems/subhull.h>
+#include <shipsbattle/components/subsystems/typedefs.h>
 
 #include <ugdk/action/3D/element.h>
 #include <ugdk/debug/log.h>
@@ -11,8 +12,10 @@
 using std::shared_ptr;
 using ugdk::debug::Log;
 using ugdk::debug::LogLevel;
+using shipsbattle::components::subsystems::DecaymentFunction;
 using shipsbattle::components::subsystems::DamageableSystem;
 using shipsbattle::components::subsystems::SubHull;
+using shipsbattle::components::subsystems::DecaymentFunction;
 
 
 namespace shipsbattle {
@@ -63,8 +66,11 @@ void Hull::RegisterDamageableSystem(subsystems::DamageableSystem* dmgable_sys) {
 struct HitData {
     double dmg;
     double piercing;
+    double radius;
+    DecaymentFunction decayment;
 
-    HitData(double _dmg, double _piercing) : dmg(_dmg), piercing(_piercing) {}
+    HitData(double _dmg, double _piercing, double _radius, const DecaymentFunction& _decayment)
+        : dmg(_dmg), piercing(_piercing), radius(_radius), decayment(_decayment) {}
 };
 
 struct TakeDamageCallback : public btCollisionWorld::ContactResultCallback
@@ -91,18 +97,20 @@ struct TakeDamageCallback : public btCollisionWorld::ContactResultCallback
 
         if (sys->destroyed()) return 0;
 
+        auto dist = (cp.getPositionWorldOnA() - cp.getPositionWorldOnB()).length();
+        double dmg_factor = data->decayment(dist, data->radius);
         //std::cout << "TakeDamageCallback: sys=" << sys->name() << std::endl;
-        sys->TakeDamage(data->dmg, data->piercing);
+        sys->TakeDamage(data->dmg * dmg_factor, data->piercing);
 
         return 0;
     }
 };
 
-void Hull::TakeDamage(double dmg, double piercing, double splash_radius, const btVector3& pos) {
+void Hull::TakeDamage(double dmg, double piercing, double splash_radius, const btVector3& pos, const DecaymentFunction& decayment) {
     btCollisionObject* hit = new btCollisionObject();
     hit->setCollisionShape(new btSphereShape(static_cast<btScalar>(splash_radius)));
     hit->setWorldTransform(btTransform(btQuaternion::getIdentity(), btVector3(pos.x(), pos.y(), pos.z())));
-    HitData* hitdata = new HitData(dmg, piercing);
+    HitData* hitdata = new HitData(dmg, piercing, splash_radius, decayment);
     hit->setUserPointer(hitdata);
 
     //std::cout << "HULL TAKE DAMAGE d/p/s/xyz: " << dmg << "/" << piercing << "/" << splash_radius;

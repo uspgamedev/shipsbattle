@@ -16,6 +16,7 @@ namespace shipsbattle {
 namespace components {
 class Hull;
 class PowerSystem;
+class Tactical;
 }
 
 namespace objects {
@@ -23,19 +24,27 @@ namespace objects {
 class Ship {
 public:
     Ship(ugdk::action::mode3d::Scene3D& scene, const std::string& name, const std::string& meshName);
-    Ship(ugdk::action::mode3d::Element* ship);
+    Ship(const std::shared_ptr<ugdk::action::mode3d::Element>& ship);
     ~Ship();
 
     ugdk::action::mode3d::component::Body* body();
     ugdk::action::mode3d::component::View* view();
     shipsbattle::components::Hull* hull();
     shipsbattle::components::PowerSystem* power();
+    shipsbattle::components::Tactical* tactical();
     
-    ugdk::action::mode3d::Element* operator->() const { return ship_; }
-    ugdk::action::mode3d::Element operator*() const { return *ship_; }
+    std::shared_ptr<ugdk::action::mode3d::Element> operator->() const { return ship_.lock(); }
+    ugdk::action::mode3d::Element& operator*() const { return *ship_.lock(); }
+
+    bool valid() const { 
+        /*if (ship_.lock())
+            return true;
+        return false;*/
+        return !ship_.expired();
+    }
 
 protected:
-    ugdk::action::mode3d::Element* ship_;
+    std::weak_ptr<ugdk::action::mode3d::Element> ship_;
 };
 
 } // namespace objects

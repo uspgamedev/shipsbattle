@@ -52,10 +52,15 @@ public:
     /** Sets the collision shape of this subsystem.*/
     void SetVolume(double radius, const btVector3& pos);
     btCollisionObject* volume() const { return volume_; }
-    /** Position of the subsystem in the ship.*/
+    /** Local Position of the subsystem in the ship.*/
     btVector3 position() const;
+    /** Absolute position of the subsystem in the world. */
+    btVector3 world_position() const;
     /** Radius of the subsystem*/
     double radius() const;
+
+    /** Gets the parent component system of this subsystems. */
+    ugdk::action::mode3d::Component* parent() const { return parent_; }
 
     /** Method to deal/fix damage to this subsystems, updating the hitpoints and armor rating 
     of this ship by a given amount. Positive amounts deal damage, negative amounts fix the system.

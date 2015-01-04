@@ -6,19 +6,32 @@ endif ()
 set(SHIPSBATTLE_SRC
 shipsbattle/main.cc
 
+shipsbattle/components/updateablecomponent.h
+shipsbattle/components/updateablecomponent.cc
 shipsbattle/components/spacedust.h
 shipsbattle/components/spacedust.cc
 shipsbattle/components/playercontroller.h
 shipsbattle/components/playercontroller.cc
+shipsbattle/components/projectilecontroller.h
+shipsbattle/components/projectilecontroller.cc
+shipsbattle/components/timedlife.h
+shipsbattle/components/timedlife.cc
 shipsbattle/components/hull.h
 shipsbattle/components/hull.cc
 shipsbattle/components/powersystem.h
 shipsbattle/components/powersystem.cc
+shipsbattle/components/tactical.h
+shipsbattle/components/tactical.cc
 
 shipsbattle/objects/objecttypes.h
 shipsbattle/objects/ship.h
 shipsbattle/objects/ship.cc
+shipsbattle/objects/projectile.h
+shipsbattle/objects/projectile.cc
+shipsbattle/objects/projectilemodel.h
+shipsbattle/objects/projectilemodel.cc
 
+shipsbattle/components/subsystems/typedefs.h
 shipsbattle/components/subsystems/damageablesystem.h
 shipsbattle/components/subsystems/damageablesystem.cc
 shipsbattle/components/subsystems/subhull.h
@@ -26,6 +39,10 @@ shipsbattle/components/subsystems/powergenerator.h
 shipsbattle/components/subsystems/battery.h
 shipsbattle/components/subsystems/poweredsystem.h
 shipsbattle/components/subsystems/poweredsystem.cc
+shipsbattle/components/subsystems/weapon.h
+shipsbattle/components/subsystems/weapon.cc
+shipsbattle/components/subsystems/projectileweapon.h
+shipsbattle/components/subsystems/projectileweapon.cc
 )
 
 include_directories (${CMAKE_CURRENT_SOURCE_DIR})
