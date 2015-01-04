@@ -1,7 +1,7 @@
 #ifndef SHIPSBATTLE_COMPONENTS_PLAYERCONTROLLER_H
 #define SHIPSBATTLE_COMPONENTS_PLAYERCONTROLLER_H
 
-#include <ugdk/action/3D/component.h>
+#include <shipsbattle/components/updateablecomponent.h>
 #include <ugdk/system/eventhandler.h>
 #include <ugdk/input/events.h>
 
@@ -15,8 +15,11 @@ class KeyPressedEvent;
 
 namespace shipsbattle {
 namespace components {
+namespace subsystems {
+class DamageableSystem;
+}
 
-class PlayerController : public ugdk::action::mode3d::Component,
+class PlayerController : public UpdateableComponent,
                          public ugdk::system::Listener<ugdk::input::MouseWheelEvent>,
                          public ugdk::system::Listener<ugdk::input::MouseMotionEvent>,
                          public ugdk::system::Listener<ugdk::input::KeyPressedEvent>,
@@ -42,13 +45,16 @@ public:
     void Handle(const ugdk::input::JoystickConnectedEvent& ev);
     void Handle(const ugdk::input::JoystickDisconnectedEvent& ev);
 
-    void Update(double dt);
+    void Update(double dt) override;
 
-  protected:
+    void set_target(subsystems::DamageableSystem* target) { target_ = target; }
+
+protected:
     void OnTaken() override;
 
 private:
     double speed_;
+    subsystems::DamageableSystem* target_;
 };
 
 inline std::type_index PlayerController::type() const {

@@ -1,4 +1,5 @@
 #include <shipsbattle/components/playercontroller.h>
+#include <shipsbattle/components/tactical.h>
 #include <ugdk/input/module.h>
 #include <ugdk/input/joystick.h>
 #include <ugdk/action/3D/element.h>
@@ -13,6 +14,7 @@
 
 using std::cout;
 using std::endl;
+using shipsbattle::components::Tactical;
 
 namespace shipsbattle {
 namespace components {
@@ -48,6 +50,8 @@ void PlayerController::Handle(const ugdk::input::KeyPressedEvent& ev) {
 void PlayerController::Handle(const ugdk::input::MouseButtonPressedEvent& ev) {
     if (ev.button == ugdk::input::MouseButton::LEFT) {
         cout << "FIRE" << endl;
+        auto tact = owner()->component<Tactical>();
+        tact->FireAll(target_);
     }
     else if (ev.button == ugdk::input::MouseButton::RIGHT) {
         cout << "TARGET CYCLE" << endl;
@@ -106,12 +110,9 @@ void PlayerController::OnTaken() {
 
     // set event listeners
     scene.event_handler().AddObjectListener(this);
-
-    // set update task
-    scene.AddTask(ugdk::system::Task(
-    [this](double dt) {
-        this->Update(dt);
-    }));
+    
+    // this sets update task
+    UpdateableComponent::OnTaken();
 }
 
 } // namespace components
