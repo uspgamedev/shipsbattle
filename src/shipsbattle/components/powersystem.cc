@@ -7,7 +7,6 @@
 #include <ugdk/action/3D/element.h>
 #include <ugdk/debug/log.h>
 
-#include <list>
 #include <iostream>
 
 using std::shared_ptr;
@@ -17,17 +16,9 @@ using shipsbattle::components::subsystems::DamageableSystem;
 using shipsbattle::components::subsystems::PowerGenerator;
 using shipsbattle::components::subsystems::Battery;
 
-namespace {
-    bool created_update_task = false;
-    std::list<shipsbattle::components::PowerSystem*> power_systems;
-}
-
 namespace shipsbattle {
 namespace components {
 
-PowerSystem::~PowerSystem() {
-    power_systems.remove(this);
-}
 
 void PowerSystem::AddPowerGenerator(const shared_ptr<PowerGenerator>& gen) {
     if (generator_indexes_.count(gen->name()) > 0) {
@@ -112,19 +103,6 @@ void PowerSystem::Update(double dt) {
     }
 }
 
-void PowerSystem::OnTaken() {
-    power_systems.push_back(this);
-
-    if (!created_update_task) {
-        owner()->scene().AddTask(ugdk::system::Task(
-        [](double dt) {
-            for (auto ps : power_systems) {
-                ps->Update(dt);
-            }
-        }));
-        created_update_task = true;
-    }
-}
 
 void PowerSystem::RegisterPoweredSystem(subsystems::PoweredSystem* powered_sys) {
     systems_.push_back(powered_sys);

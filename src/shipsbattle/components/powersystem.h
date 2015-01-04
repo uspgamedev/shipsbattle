@@ -1,7 +1,7 @@
 #ifndef SHIPSBATTLE_COMPONENTS_POWERSYSTEM_H
 #define SHIPSBATTLE_COMPONENTS_POWERSYSTEM_H
 
-#include <ugdk/action/3D/component.h>
+#include <shipsbattle/components/updateablecomponent.h>
 #include <vector>
 #include <unordered_map>
 
@@ -15,10 +15,9 @@ class Battery;
 class PoweredSystem;
 }
 
-class PowerSystem : public ugdk::action::mode3d::Component {
+class PowerSystem : public UpdateableComponent {
 public:
     PowerSystem() {}
-    virtual ~PowerSystem();
 
     virtual std::type_index type() const override;
 
@@ -32,11 +31,9 @@ public:
     const std::shared_ptr<subsystems::Battery>& GetBattery(const std::string& name);
     size_t GetNumBatteries() const { return batteries_.size(); }
 
-    void Update(double dt);
+    void Update(double dt) override;
 
 protected:
-    void OnTaken() override;
-
     friend class subsystems::PoweredSystem;
     void RegisterPoweredSystem(subsystems::PoweredSystem* powered_sys);
 
