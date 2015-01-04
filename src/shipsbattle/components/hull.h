@@ -2,6 +2,7 @@
 #define SHIPSBATTLE_COMPONENTS_HULL_H
 
 #include <ugdk/action/3D/component.h>
+#include <shipsbattle/components/subsystems/typedefs.h>
 #include <vector>
 #include <unordered_map>
 
@@ -31,7 +32,7 @@ public:
     const std::shared_ptr<subsystems::SubHull>& GetSubHull(const std::string& name);
     size_t GetNumSubHulls() const { return subhulls_.size(); }
 
-    void TakeDamage(double dmg, double piercing, double splash_radius, const btVector3& pos);
+    void TakeDamage(double dmg, double piercing, double splash_radius, const btVector3& pos, const subsystems::DecaymentFunction& decayment);
 
 protected:
     void OnTaken() override;

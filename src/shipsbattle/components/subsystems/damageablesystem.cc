@@ -1,10 +1,15 @@
 #include <shipsbattle/components/subsystems/damageablesystem.h>
 #include <shipsbattle/components/hull.h>
 #include <ugdk/action/3D/element.h>
+#include <ugdk/action/3D/component/body.h>
+#include <ugdk/action/3D/scene3d.h>
 
 #include <btBulletCollisionCommon.h>
+#include <BtOgreExtras.h>
 
 #include <iostream>
+
+using ugdk::action::mode3d::component::Body;
 
 namespace shipsbattle {
 namespace components {
@@ -47,6 +52,11 @@ void DamageableSystem::TakeDamage(double dmg, double piercing) {
     if (hitpoints_ < 0.0) {
         //TODO: KABUM
         std::cout << "Subsystem '" << name_ << "' KABUM" << std::endl;
+        if (required_) {
+            // kabum ship
+            parent_->owner()->scene().DestroyAndRemoveElement(parent_->owner());
+            std::cout << "DESTROYED AND REMOVED ELEMENT '" << parent_->owner()->name() << "'" << std::endl;
+        }
     }
 }
 
@@ -61,6 +71,10 @@ void DamageableSystem::SetVolume(double radius, const btVector3& pos) {
 
 btVector3 DamageableSystem::position() const {
     return volume_->getWorldTransform().getOrigin();
+}
+
+btVector3 DamageableSystem::world_position() const {
+    return position() + BtOgre::Convert::toBullet(parent_->owner()->component<Body>()->position());
 }
 
 double DamageableSystem::radius() const {
