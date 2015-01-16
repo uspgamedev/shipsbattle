@@ -74,7 +74,9 @@ btVector3 DamageableSystem::position() const {
 }
 
 btVector3 DamageableSystem::world_position() const {
-    return position() + BtOgre::Convert::toBullet(parent_->owner()->component<Body>()->position());
+    auto body = parent_->owner()->component<Body>();
+    auto pos = BtOgre::Convert::toOgre(position());
+    return BtOgre::Convert::toBullet(body->orientation() * pos) + BtOgre::Convert::toBullet(body->position());
 }
 
 double DamageableSystem::radius() const {
