@@ -258,8 +258,16 @@ int main(int argc, char* argv[]) {
     //AddSubHull(player, "BallBottom", 0.1, 0, 0, 0.25);
     AddSubHull(player, "BallFront", 0.2, 0, 0, 3.7);
 
+    // create Enemy ship
+    Ship enemy = createShip("Enemy");
+    enemy.body()->Translate(0, 0, 80);
+    AddSubHull(enemy, "Butt", 0.2, 0.0, 0.0, -3.6);
+    player->component<PlayerController>()->set_target( enemy.hull()->GetSubHull("Butt").get() );
+    //enemy->AddComponent(std::make_shared<shipsbattle::components::TimedLife>(15.0));
+
+    CreateHUD(player, enemy);
     ourscene->event_handler().AddListener<ugdk::input::KeyPressedEvent>(
-    [&player](const ugdk::input::KeyPressedEvent& ev) -> void {
+        [&player,&enemy](const ugdk::input::KeyPressedEvent& ev) -> void {
         if (ev.scancode == ugdk::input::Scancode::I) {
             player.hull()->TakeDamage(-100, 0.2, 5.0, btVector3(0, 0, 3.9), CONSTANT);
         }
@@ -269,16 +277,10 @@ int main(int argc, char* argv[]) {
         else if (ev.scancode == ugdk::input::Scancode::P) {
             player.hull()->TakeDamage(100, 0.2, 0.0, btVector3(0, 0, 3.9), CONSTANT);
         }
+        else if (ev.scancode == ugdk::input::Scancode::SPACE) {
+            enemy.hull()->TakeDamage(-500.0, 0.0, 1.0, btVector3(0, 0, 0), CONSTANT);
+        }
     });
-
-    // create Enemy ship
-    Ship enemy = createShip("Enemy");
-    enemy.body()->Translate(0, 0, 80);
-    AddSubHull(enemy, "Butt", 0.2, 0.0, 0.0, -3.6);
-    player->component<PlayerController>()->set_target( enemy.hull()->GetSubHull("Butt").get() );
-    //enemy->AddComponent(std::make_shared<shipsbattle::components::TimedLife>(15.0));
-
-    CreateHUD(player, enemy);
 
     // push scene
     ugdk::system::PushScene(unique_ptr<ugdk::action::Scene>(ourscene));
