@@ -30,6 +30,7 @@ private:
     objects::Ship parent_ship_;
     objects::ProjectileModel projectile_;
     subsystems::DamageableSystem* target_;
+    double elapsed_;
 };
 
 inline std::type_index ProjectileController::type() const {

@@ -12,25 +12,33 @@ namespace shipsbattle {
 namespace components {
 
 ProjectileController::ProjectileController(const objects::Ship& parent_ship, const objects::ProjectileModel& projectile, subsystems::DamageableSystem* target)
-    : parent_ship_(parent_ship), projectile_(projectile), target_(target)
+    : parent_ship_(parent_ship), projectile_(projectile), target_(target), elapsed_(0.0)
 {
 }
 
 void ProjectileController::Update(double dt) {
-    auto body = owner()->component<Body>();
+    if (elapsed_ > projectile_.motion_lifetime()) return;
+    elapsed_ += dt;
 
-    auto dir = body->orientation() * Ogre::Vector3::UNIT_Z;
-    dir.normalise();
+    auto body = owner()->component<Body>();
+    auto dir = BtOgre::Convert::toBullet(body->orientation() * Ogre::Vector3::UNIT_Z);
 
     // turn projectile
-    auto target_pos = BtOgre::Convert::toOgre(target_->world_position());
-    auto path = target_pos - body->position();
-    auto rot = dir.getRotationTo(path);
-    auto turn = rot * Ogre::Vector3::UNIT_Z;
-    body->Rotate(turn.x, turn.y, turn.z);
+    auto target_pos = target_->world_position();
+    auto target_dir = target_pos - BtOgre::Convert::toBullet(body->position());
 
-    // boost projectile
-    body->Move( dir * (projectile_.linear_speed() * projectile_.mass())  );
+    auto perpendicular = dir.cross(target_dir);
+    auto angleToTarget = dir.angle(target_dir);
+    auto angle = projectile_.angular_speed() * dt;
+    if (angle > angleToTarget)  angle = angleToTarget;
+
+    perpendicular.normalize();
+    dir.normalize();
+    auto path = BtOgre::Convert::toOgre(dir.rotate(perpendicular, angle));
+    path.normalise();
+
+    body->set_orientation(path);
+    body->Move(path * (projectile_.linear_speed() * projectile_.mass()));
 }
 
 void ProjectileController::OnTaken() {

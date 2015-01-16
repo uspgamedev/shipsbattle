@@ -57,8 +57,9 @@ Projectile::Projectile(const Ship& parent_ship, const ProjectileModel& model, Da
     pbody->SetContinuousCollisionDetection(100.0, entity->getBoundingRadius() / 2.0);
 
     pbody->AddCollisionAction(ObjectTypes::SHIP,
-        [model](const ElementPtr& self, const ElementPtr& target, const ContactPointVector& pts) {
+        [&model](const ElementPtr& self, const ElementPtr& target, const ContactPointVector& pts) {
         cout << "Projetil tipo '" << model.name() << "' acertando nave " << target->name() << " (" << pts.size() << ")" << endl;
+        if (self->marked_for_removal()) return;
 
         // do damage
         Ship ship(target);
@@ -66,6 +67,8 @@ Projectile::Projectile(const Ship& parent_ship, const ProjectileModel& model, Da
             auto localPtB = pt.world_positionB - BtOgre::Convert::toBullet(ship.body()->position());
             ship.hull()->TakeDamage(model.damage()/pts.size(), model.armor_piercing(), model.splash_radius(), localPtB, model.decayment());
         }
+        // call onhit
+        self->component<ProjectileController>()->projectile().OnHit();
         // remove projectile
         self->scene().DestroyAndRemoveElement(self);
     });

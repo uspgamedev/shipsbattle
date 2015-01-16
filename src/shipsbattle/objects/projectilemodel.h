@@ -45,12 +45,15 @@ public:
     /** Name of mesh to use for this projectile. */
     std::string mesh_name() const { return mesh_name_; }
     void set_mesh_name(const std::string& mname) { mesh_name_ = mname; }
-    /** Linear speed of this projectile, while cruising. */
+    /** Linear speed (in gameUnits/s) of this projectile, while cruising. */
     double linear_speed() const { return linear_speed_; }
     void set_linear_speed(double lin_spd) { linear_speed_ = lin_spd; }
-    /** Angular speed of this projectile, while cruising to track its target. */
+    /** Angular speed (in radians/s) of this projectile, while cruising to track its target. */
     double angular_speed() const { return angular_speed_; }
     void set_angular_speed(double ang_spd) { angular_speed_ = ang_spd; }
+    /** Time in seconds since launch in which the projectile will maintain its motion. */
+    double motion_lifetime() const { return motion_lifetime_; }
+    void set_motion_lifetime(double motion_time) { motion_lifetime_ = motion_time; }
 
 protected:
     std::string name_;
@@ -67,6 +70,7 @@ protected:
     // motion attributes
     double linear_speed_;
     double angular_speed_;
+    double motion_lifetime_;
 };
 
 } // namespace objects

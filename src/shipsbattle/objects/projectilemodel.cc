@@ -5,7 +5,7 @@ namespace objects {
 
 ProjectileModel::ProjectileModel(const std::string& name)
 : name_(name), damage_(100), splash_radius_(1.0), armor_piercing_(1.0), shot_cost_(10), lifetime_(30), 
-    mass_(10), mesh_name_(""), linear_speed_(10), angular_speed_(5)
+mass_(10), mesh_name_(""), linear_speed_(10), angular_speed_(5), motion_lifetime_(2.0)
 {
     decayment_ = [](double dist, double radius) {
         return dist / radius;
