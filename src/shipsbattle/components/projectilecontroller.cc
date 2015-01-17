@@ -5,7 +5,7 @@
 #include <ugdk/action/3D/element.h>
 
 #include <BtOgreExtras.h>
-
+#include <iostream>
 using ugdk::action::mode3d::component::Body;
 
 namespace shipsbattle {
@@ -29,16 +29,31 @@ void ProjectileController::Update(double dt) {
 
     auto perpendicular = dir.cross(target_dir);
     auto angleToTarget = dir.angle(target_dir);
-    auto angle = projectile_.angular_speed() * dt;
-    if (angle > angleToTarget)  angle = angleToTarget;
-
-    perpendicular.normalize();
     dir.normalize();
-    auto path = BtOgre::Convert::toOgre(dir.rotate(perpendicular, angle));
-    path.normalise();
+    Ogre::Vector3 path;
+    if (angleToTarget <= 0.0 || perpendicular.length2() <= 0.0) {
+        // we're pointing exactly to target, no need to rotate direction.
+        // besides, to do that we would need to perp.normalize(), and that will crash in this case (length 0).
+        path = BtOgre::Convert::toOgre(dir);
+    }
+    else {
+        auto angle = projectile_.angular_speed() * dt;
+        if (angle > angleToTarget)  angle = angleToTarget;
 
+        perpendicular.normalize();
+        path = BtOgre::Convert::toOgre(dir.rotate(perpendicular, angle));
+        path.normalise();
+    }
     body->set_orientation(path);
-    body->Move(path * (projectile_.linear_speed() * projectile_.mass()));
+    body->ApplyImpulse(path * (projectile_.linear_speed() * projectile_.mass()));
+
+    /*
+    *** TO FINISH WEAPON SYSTEM ISSUE
+    * implement velocity push on projectile-ship collision (vai precisar de applyForceOnPosition)
+    * implement bonus velocity damage for projectiles
+    * fix OnHit to receive some gorram arguments
+    * (for later) projectile weapons could have some capability to shoot leading the target
+    */
 }
 
 void ProjectileController::OnTaken() {
