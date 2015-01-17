@@ -51,7 +51,6 @@ void ProjectileController::Update(double dt) {
     *** TO FINISH WEAPON SYSTEM ISSUE
     * implement velocity push on projectile-ship collision (vai precisar de applyForceOnPosition)
     * implement bonus velocity damage for projectiles
-    * fix OnHit to receive some gorram arguments
     * (for later) projectile weapons could have some capability to shoot leading the target
     */
 }

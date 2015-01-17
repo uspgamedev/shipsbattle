@@ -61,6 +61,10 @@ Projectile::Projectile(const Ship& parent_ship, const ProjectileModel& model, Da
         cout << "Projetil tipo '" << model.name() << "' acertando nave " << target->name() << " (" << pts.size() << ")" << endl;
         if (self->marked_for_removal()) return;
 
+        // apply velocity push
+        /****/
+        // calculate actual total damage (dmg + velocityDamage)
+        /****/
         // do damage
         Ship ship(target);
         for (auto pt : pts) {
@@ -68,7 +72,7 @@ Projectile::Projectile(const Ship& parent_ship, const ProjectileModel& model, Da
             ship.hull()->TakeDamage(model.damage()/pts.size(), model.armor_piercing(), model.splash_radius(), localPtB, model.decayment());
         }
         // call onhit
-        self->component<ProjectileController>()->projectile().OnHit();
+        self->component<ProjectileController>()->projectile().OnHit(Projectile(self), ship, pts);
         // remove projectile
         self->scene().DestroyAndRemoveElement(self);
     });

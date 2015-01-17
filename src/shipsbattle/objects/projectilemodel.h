@@ -2,6 +2,14 @@
 #define SHIPSBATTLE_OBJECTS_PROJECTILEMODEL_H_
 
 #include <shipsbattle/components/subsystems/typedefs.h>
+#include <vector>
+
+namespace ugdk {
+namespace action {
+namespace mode3d{
+namespace component {
+struct ContactPoint;
+}}}}
 
 namespace shipsbattle {
 namespace components {
@@ -10,13 +18,15 @@ class DamageableSystem;
 }
 }
 namespace objects {
+class Projectile;
+class Ship;
 
 class ProjectileModel {
 public:
     ProjectileModel(const std::string& name);
 
     void OnFire(components::subsystems::DamageableSystem* target);
-    void OnHit();
+    void OnHit(Projectile& self, Ship& target, const std::vector<ugdk::action::mode3d::component::ContactPoint>& pts);
 
     /** Name of this projectile model. */
     std::string name() const { return name_; }
