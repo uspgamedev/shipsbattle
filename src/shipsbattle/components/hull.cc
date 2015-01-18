@@ -63,44 +63,40 @@ void Hull::RegisterDamageableSystem(subsystems::DamageableSystem* dmgable_sys) {
     }
 }
 
-struct HitData {
+struct TakeDamageCallback : public btCollisionWorld::ContactResultCallback
+{
     double dmg;
     double piercing;
     double radius;
     DecaymentFunction decayment;
 
-    HitData(double _dmg, double _piercing, double _radius, const DecaymentFunction& _decayment)
+    TakeDamageCallback(double _dmg, double _piercing, double _radius, const DecaymentFunction& _decayment)
         : dmg(_dmg), piercing(_piercing), radius(_radius), decayment(_decayment) {}
-};
 
-struct TakeDamageCallback : public btCollisionWorld::ContactResultCallback
-{
     virtual	btScalar addSingleResult(btManifoldPoint& cp, const btCollisionObjectWrapper* colObj0Wrap,
         int partId0, int index0, const btCollisionObjectWrapper* colObj1Wrap, int partId1, int index1)
     {
-        HitData* data = static_cast<HitData*>(colObj0Wrap->getCollisionObject()->getUserPointer());
         DamageableSystem* sys;
-        if (!data) {
-            data = static_cast<HitData*>(colObj1Wrap->getCollisionObject()->getUserPointer());
-            if (!data) {
-                return 0; //Both objects are not the damage collision object
-            }
+        if (colObj0Wrap->getCollisionObject()->getUserPointer() == nullptr) {
+            sys = static_cast<DamageableSystem*>(colObj1Wrap->getCollisionObject()->getUserPointer());
+        }
+        else if (colObj1Wrap->getCollisionObject()->getUserPointer() == nullptr) {
             sys = static_cast<DamageableSystem*>(colObj0Wrap->getCollisionObject()->getUserPointer());
         }
         else {
-            sys = static_cast<DamageableSystem*>(colObj1Wrap->getCollisionObject()->getUserPointer());
+            return 0; //Both objects are not the damage collision object
         }
         if (!sys) {
-            std::cout << "TakeDamageCallback WARNING: got a pair with a HitData and something else which is not a DamageableSystem" << std::endl;
+            std::cout << "TakeDamageCallback WARNING: got a pair with something which is not a DamageableSystem" << std::endl;
             return 0;
         }
 
         if (sys->destroyed()) return 0;
 
         auto dist = (cp.getPositionWorldOnA() - cp.getPositionWorldOnB()).length();
-        double dmg_factor = data->decayment(dist, data->radius);
+        double dmg_factor = decayment(dist, radius);
         //std::cout << "TakeDamageCallback: sys=" << sys->name() << std::endl;
-        sys->TakeDamage(data->dmg * dmg_factor, data->piercing);
+        sys->TakeDamage(dmg * dmg_factor, piercing);
 
         return 0;
     }
@@ -110,21 +106,18 @@ void Hull::TakeDamage(double dmg, double piercing, double splash_radius, const b
     btCollisionObject* hit = new btCollisionObject();
     hit->setCollisionShape(new btSphereShape(static_cast<btScalar>(splash_radius)));
     hit->setWorldTransform(btTransform(btQuaternion::getIdentity(), btVector3(pos.x(), pos.y(), pos.z())));
-    HitData* hitdata = new HitData(dmg, piercing, splash_radius, decayment);
-    hit->setUserPointer(hitdata);
+    hit->setUserPointer(nullptr);
 
     //std::cout << "HULL TAKE DAMAGE d/p/s/xyz: " << dmg << "/" << piercing << "/" << splash_radius;
     //std::cout << "/(" << pos.x() << ", " << pos.y() << ", " << pos.z() << ")" << std::endl;
 
     //TODO: para implementar ordem e peso nos sistemas pra divisao do dano, o TDC tem que simplesmente 
     // armazenar os sistemas afetados numa lista, e depois da chamada de contactTest nos tratamos dessa lista
-    TakeDamageCallback tdc;
+    TakeDamageCallback tdc(dmg, piercing, splash_radius, decayment);
     world_->contactTest(hit, tdc);
-
     //std::cout << "FINISHED HULL TAKE DAMAGE" << std::endl;
 
     delete hit->getCollisionShape();
-    delete hitdata;
     delete hit;
 }
 
