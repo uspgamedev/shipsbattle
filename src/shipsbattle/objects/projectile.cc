@@ -52,7 +52,7 @@ Projectile::Projectile(const Ship& parent_ship, const ProjectileModel& model, Da
     data.collides_with = ObjectTypes::SHIP | ObjectTypes::PROJECTILE;
     PhysicsBody* pbody = new PhysicsBody(*scene.physics(), data);
     projectile->AddComponent(std::shared_ptr<PhysicsBody>(pbody));
-    pbody->set_damping(.25, .25);
+    pbody->set_damping(0.0, 0.0);
     pbody->SetRespondsOnContact(false);
     pbody->SetContinuousCollisionDetection(100.0, entity->getBoundingRadius() / 2.0);
 
@@ -62,15 +62,19 @@ Projectile::Projectile(const Ship& parent_ship, const ProjectileModel& model, Da
         if (self->marked_for_removal()) return;
         Projectile shot(self);
         Ship ship(target);
-        // apply velocity push
+        // calculate velocity push and actual damage
         auto shot_vel = shot.body()->linear_velocity();
-        // calculate actual total damage (dmg + velocityDamage)
-        /****/
-        // do damage
+        double shot_speed = shot_vel.length(); // speed in game units /s
+        cout << "Speed=" << shot_speed << "; rawDmg=" << model.damage() << "; speedDmg=" << model.GetBonusDamage(shot_speed) << endl;
+        auto damage = (model.damage() + model.GetBonusDamage(shot_speed)) / pts.size();
+        shot_vel /= pts.size();
+        // for each collision point
         for (auto pt : pts) {
             auto localPtB = pt.world_positionB - BtOgre::Convert::toBullet(ship.body()->position());
-            ship.hull()->TakeDamage(model.damage()/pts.size(), model.armor_piercing(), model.splash_radius(), localPtB, model.decayment());
-            ship.body()->ApplyImpulse(shot_vel / pts.size(), BtOgre::Convert::toOgre(localPtB));
+            // do damage
+            ship.hull()->TakeDamage(damage, model.armor_piercing(), model.splash_radius(), localPtB, model.decayment());
+            // apply velocity push
+            ship.body()->ApplyImpulse(shot_vel, BtOgre::Convert::toOgre(localPtB));
         }
         // call onhit
         self->component<ProjectileController>()->projectile().OnHit(shot, ship, pts);

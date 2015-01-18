@@ -112,7 +112,7 @@ Ship::Ship(Scene3D& scene, const string& name, const string& meshName) {
     ProjectileWeapon* gun = new ProjectileWeapon("Cannon");
     ProjectileModel ammunition ("HEAmmo");
     ammunition.set_mesh_name("Ammo");
-    ammunition.set_linear_speed(10.0);
+    ammunition.set_linear_speed(50.0);
     ammunition.set_angular_speed( 20 * 3.14/180);
     gun->set_projectile(ammunition);
     gun->set_direction(Ogre::Vector3::UNIT_Z);

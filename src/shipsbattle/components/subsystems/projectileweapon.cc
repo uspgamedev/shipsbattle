@@ -37,7 +37,8 @@ bool ProjectileWeapon::Fire(DamageableSystem* target) {
     auto pos = BtOgre::Convert::toOgre(world_position()) + (dir * shot_radius * 1.05);
     objects::Projectile shot = objects::Projectile(self, projectile_, target, pos, dir);
     
-    shot.body()->set_linear_velocity(dir * launching_speed_);
+    auto shot_vel = self.body()->linear_velocity() + (dir * launching_speed_);
+    shot.body()->set_linear_velocity(shot_vel);
 
     projectile_.OnFire(target);
 

@@ -45,13 +45,7 @@ void ProjectileController::Update(double dt) {
         path.normalise();
     }
     body->set_orientation(path);
-    body->ApplyImpulse(path * (projectile_.linear_speed() * projectile_.mass()));
-
-    /*
-    *** TO FINISH WEAPON SYSTEM ISSUE
-    * implement bonus velocity damage for projectiles
-    * (for later) projectile weapons could have some capability to shoot leading the target
-    */
+    body->ApplyImpulse(path * (projectile_.linear_speed() * dt * projectile_.mass()));
 }
 
 void ProjectileController::OnTaken() {

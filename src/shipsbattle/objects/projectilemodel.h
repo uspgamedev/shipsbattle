@@ -28,6 +28,8 @@ public:
     void OnFire(components::subsystems::DamageableSystem* target);
     void OnHit(Projectile& self, Ship& target, const std::vector<ugdk::action::mode3d::component::ContactPoint>& pts);
 
+    double GetBonusDamage(double speed) const;
+
     /** Name of this projectile model. */
     std::string name() const { return name_; }
     /** Regular damage done by this weapon on hit. */
@@ -64,6 +66,18 @@ public:
     /** Time in seconds since launch in which the projectile will maintain its motion. */
     double motion_lifetime() const { return motion_lifetime_; }
     void set_motion_lifetime(double motion_time) { motion_lifetime_ = motion_time; }
+    /** Minimum bonus damage to be dealt by projectile speed in collisions. */
+    double min_bonus_damage() const { return min_bonus_damage_; }
+    void set_min_bonus_damage(double bonus_damage) { min_bonus_damage_ = bonus_damage; }
+    /** Maximum bonus damage to be dealt by projectile speed in collisions. */
+    double max_bonus_damage() const { return max_bonus_damage_; }
+    void set_max_bonus_damage(double bonus_damage) { max_bonus_damage_ = bonus_damage; }
+    /** Speed in which the projectile deals the minimum bonus damage. */
+    double min_bonus_speed() const { return min_bonus_speed_; }
+    void set_min_bonus_speed(double bonus_speed) { min_bonus_speed_ = bonus_speed; }
+    /** Speed in which the projectile deals the maximum bonus damage. */
+    double max_bonus_speed() const { return max_bonus_speed_; }
+    void set_max_bonus_speed(double bonus_speed) { max_bonus_speed_ = bonus_speed; }
 
 protected:
     std::string name_;
@@ -81,6 +95,10 @@ protected:
     double linear_speed_;
     double angular_speed_;
     double motion_lifetime_;
+    double min_bonus_damage_;
+    double max_bonus_damage_;
+    double min_bonus_speed_;
+    double max_bonus_speed_;
 };
 
 } // namespace objects
