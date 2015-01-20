@@ -1,31 +1,23 @@
 #include <shipsbattle/components/subsystems/sensorarray.h>
 
-#include <ugdk/action/3D/component/body.h>
-#include <ugdk/action/3D/element.h>
-
-#include <OgreVector3.h>
-#include <BtOgreExtras.h>
-
-using ugdk::action::mode3d::component::Body;
-
 namespace shipsbattle {
 namespace components {
 namespace subsystems {
 
 SensorArray::SensorArray(const std::string& name)
-: PoweredSystem(name)
+: PoweredSystem(name), elapsed_(0.0), refresh_rate_(0.5), maximum_range_(1000.0)
 {
 }
 
 double SensorArray::NeedsRecharge() {
-    return 0;
+    return efficiency() * energy_consumption();
 }
 void SensorArray::OnRecharge(double energy) {
     
 }
 
 void SensorArray::Update(double dt) {
-    
+    elapsed_ += dt;
 }
 
 } // namespace subsystems

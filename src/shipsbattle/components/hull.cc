@@ -7,8 +7,6 @@
 #include <btBulletCollisionCommon.h>
 #include <OgreVector3.h>
 
-#include <iostream>
-
 using std::shared_ptr;
 using ugdk::debug::Log;
 using ugdk::debug::LogLevel;
@@ -16,7 +14,6 @@ using shipsbattle::components::subsystems::DecaymentFunction;
 using shipsbattle::components::subsystems::DamageableSystem;
 using shipsbattle::components::subsystems::SubHull;
 using shipsbattle::components::subsystems::DecaymentFunction;
-
 
 namespace shipsbattle {
 namespace components {
@@ -87,7 +84,7 @@ struct TakeDamageCallback : public btCollisionWorld::ContactResultCallback
             return 0; //Both objects are not the damage collision object
         }
         if (!sys) {
-            std::cout << "TakeDamageCallback WARNING: got a pair with something which is not a DamageableSystem" << std::endl;
+            Log(LogLevel::WARNING, "HullSystem TakeDamageCallback", "got a collision pair with something which is not a DamageableSystem");
             return 0;
         }
 
