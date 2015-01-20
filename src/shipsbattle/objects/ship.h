@@ -17,6 +17,7 @@ namespace components {
 class Hull;
 class PowerSystem;
 class Tactical;
+class Navigation;
 }
 
 namespace objects {
@@ -32,14 +33,12 @@ public:
     shipsbattle::components::Hull* hull();
     shipsbattle::components::PowerSystem* power();
     shipsbattle::components::Tactical* tactical();
+    shipsbattle::components::Navigation* navigation();
     
     std::shared_ptr<ugdk::action::mode3d::Element> operator->() const { return ship_.lock(); }
     ugdk::action::mode3d::Element& operator*() const { return *ship_.lock(); }
 
     bool valid() const { 
-        /*if (ship_.lock())
-            return true;
-        return false;*/
         return !ship_.expired();
     }
 

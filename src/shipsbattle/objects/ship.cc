@@ -1,5 +1,6 @@
 #include <shipsbattle/objects/ship.h>
 #include <shipsbattle/objects/objecttypes.h>
+
 #include <shipsbattle/components/hull.h>
 #include <shipsbattle/components/subsystems/subhull.h>
 #include <shipsbattle/components/powersystem.h>
@@ -8,6 +9,8 @@
 #include <shipsbattle/components/tactical.h>
 #include <shipsbattle/components/subsystems/projectileweapon.h>
 #include <shipsbattle/objects/projectilemodel.h>
+#include <shipsbattle/components/navigation.h>
+#include <shipsbattle/components/subsystems/sensorarray.h>
 
 #include <ugdk/action/3D/component/physicsbody.h>
 #include <ugdk/action/3D/component/view.h>
@@ -36,6 +39,8 @@ using shipsbattle::components::subsystems::Battery;
 using shipsbattle::components::Tactical;
 using shipsbattle::components::subsystems::ProjectileWeapon;
 using shipsbattle::objects::ProjectileModel;
+using shipsbattle::components::Navigation;
+using shipsbattle::components::subsystems::SensorArray;
 
 namespace shipsbattle {
 namespace objects {
@@ -119,6 +124,13 @@ Ship::Ship(Scene3D& scene, const string& name, const string& meshName) {
     gun->set_launching_speed(10.0);
     gun->SetVolume(0.1, btVector3(0.0, 0.0, 3.6));
     tact->AddWeapon(std::shared_ptr<ProjectileWeapon>(gun));
+
+    // Navigation
+    ship->AddComponent(std::make_shared<Navigation>());
+    auto nav = this->navigation();
+    SensorArray* sensor = new SensorArray("Sensor Array");
+    sensor->SetVolume(0.2, btVector3(0.0, 0.5, 0.0));
+    nav->AddSensorArray(std::shared_ptr<SensorArray>(sensor));
 }
 Ship::Ship(const std::shared_ptr<ugdk::action::mode3d::Element>& ship) : ship_(ship) {
     //FIXME: make sure the element is a ship element.
@@ -142,7 +154,9 @@ PowerSystem* Ship::power() {
 Tactical* Ship::tactical() {
     return ship_.lock()->component<Tactical>();
 }
-
+Navigation* Ship::navigation() {
+    return ship_.lock()->component<Navigation>();
+}
 
 } // namespace objects
 } // namespace shipsbattle
