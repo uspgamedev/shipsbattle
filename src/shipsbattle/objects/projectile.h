@@ -18,17 +18,16 @@ class View;
 namespace shipsbattle {
 namespace components {
 class ProjectileController;
-namespace subsystems {
-class DamageableSystem;
-}}
+}
 
 namespace objects {
 class Ship;
 class ProjectileModel;
+class Target;
 
 class Projectile {
 public:
-    Projectile(const Ship& parent_ship, const ProjectileModel& model, components::subsystems::DamageableSystem* target,
+    Projectile(const Ship& parent_ship, const ProjectileModel& model, const Target& target,
         const Ogre::Vector3& position, const Ogre::Vector3& direction);
     Projectile(const std::shared_ptr<ugdk::action::mode3d::Element>& projectile);
     ~Projectile();

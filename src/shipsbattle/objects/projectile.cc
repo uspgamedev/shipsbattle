@@ -33,7 +33,7 @@ using Ogre::Vector3;
 namespace shipsbattle {
 namespace objects {
 
-Projectile::Projectile(const Ship& parent_ship, const ProjectileModel& model, DamageableSystem* target, const Vector3& position, const Vector3& direction) {
+Projectile::Projectile(const Ship& parent_ship, const ProjectileModel& model, const Target& target, const Vector3& position, const Vector3& direction) {
     auto& scene = parent_ship->scene();
     projectile_ = scene.AddElement();
     auto& projectile = projectile_.lock();
