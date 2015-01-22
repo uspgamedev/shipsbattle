@@ -5,6 +5,9 @@
 #include <OgreVector3.h>
 
 namespace shipsbattle {
+namespace objects {
+class Target;
+}
 namespace components {
 class Tactical;
 
@@ -16,9 +19,10 @@ public:
     virtual double NeedsRecharge() override;
     virtual void OnRecharge(double energy) override;
 
-    virtual bool CanFireAt(DamageableSystem* target);
-    bool TryFire(DamageableSystem* target);
-    virtual bool Fire(DamageableSystem* target) = 0;
+    bool CanFire() const;
+    virtual bool CanFireAt(const objects::Target& target);
+    bool TryFire(const objects::Target& target);
+    virtual bool Fire(const objects::Target& target) = 0;
 
     /** Return time left to be able to fire again. */
     double elapsed() const { return elapsed_; }

@@ -2,6 +2,7 @@
 #include <shipsbattle/components/subsystems/damageablesystem.h>
 #include <shipsbattle/objects/projectile.h>
 #include <shipsbattle/objects/ship.h>
+#include <shipsbattle/objects/targets.h>
 
 #include <ugdk/action/3D/component/body.h>
 #include <ugdk/action/3D/component/view.h>
@@ -22,7 +23,7 @@ ProjectileWeapon::ProjectileWeapon(const std::string& name)
 
 }
 
-bool ProjectileWeapon::Fire(DamageableSystem* target) {
+bool ProjectileWeapon::Fire(const objects::Target& target) {
     if (energy_ < projectile_.shot_cost()) return false;
 
     energy_ -= projectile_.shot_cost();
