@@ -18,7 +18,7 @@ void ProjectileModel::set_armor_piercing(double pierce) {
     if (armor_piercing_ < 0.0) armor_piercing_ = 0.0;
 }
 
-void ProjectileModel::OnFire(components::subsystems::DamageableSystem* target) {
+void ProjectileModel::OnFire(const Target& target) {
 
 }
 void ProjectileModel::OnHit(Projectile& self, Ship& target, const std::vector<ugdk::action::mode3d::component::ContactPoint>& pts) {

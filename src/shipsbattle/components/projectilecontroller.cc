@@ -11,12 +11,13 @@ using ugdk::action::mode3d::component::Body;
 namespace shipsbattle {
 namespace components {
 
-ProjectileController::ProjectileController(const objects::Ship& parent_ship, const objects::ProjectileModel& projectile, subsystems::DamageableSystem* target)
+ProjectileController::ProjectileController(const objects::Ship& parent_ship, const objects::ProjectileModel& projectile, const objects::Target& target)
     : parent_ship_(parent_ship), projectile_(projectile), target_(target), elapsed_(0.0)
 {
 }
 
 void ProjectileController::Update(double dt) {
+    if (!target_.valid()) return;
     if (elapsed_ > projectile_.motion_lifetime()) return;
     elapsed_ += dt;
 

@@ -20,12 +20,13 @@ class DamageableSystem;
 namespace objects {
 class Projectile;
 class Ship;
+class Target;
 
 class ProjectileModel {
 public:
     ProjectileModel(const std::string& name);
 
-    void OnFire(components::subsystems::DamageableSystem* target);
+    void OnFire(const objects::Target& target);
     void OnHit(Projectile& self, Ship& target, const std::vector<ugdk::action::mode3d::component::ContactPoint>& pts);
 
     double GetBonusDamage(double speed) const;
