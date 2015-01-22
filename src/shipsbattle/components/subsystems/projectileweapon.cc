@@ -42,7 +42,7 @@ bool ProjectileWeapon::Fire(const objects::Target& target) {
     shot.body()->set_linear_velocity(shot_vel);
 
     projectile_.OnFire(target);
-
+    
     return true;
 }
 

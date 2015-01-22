@@ -40,8 +40,11 @@ void Tactical::FireAll(const std::vector<std::shared_ptr<objects::TargetData>>& 
     std::vector<objects::Target> actual_targets;
     actual_targets.reserve(targets.size() * 2);
     for (auto tdata : targets) {
-        auto systems = tdata->GetPossibleTargets();
-        actual_targets.insert(actual_targets.end(), systems.begin(), systems.end());
+        auto systems = tdata->GetTargets();
+        if (systems.size() == 0)
+            actual_targets.push_back(*tdata);
+        else
+            actual_targets.insert(actual_targets.end(), systems.begin(), systems.end());
     }
 
     for (auto weapon : weapons_) {

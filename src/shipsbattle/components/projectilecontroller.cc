@@ -6,6 +6,7 @@
 
 #include <BtOgreExtras.h>
 #include <iostream>
+
 using ugdk::action::mode3d::component::Body;
 
 namespace shipsbattle {

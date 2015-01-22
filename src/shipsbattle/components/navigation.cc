@@ -122,7 +122,9 @@ TargetSet Navigation::GetTargets() {
     TargetSet targets;
     targets.reserve(targets_.size());
     for (auto key : targets_) {
-        targets.push_back( objects_[key] );
+        auto it = objects_.find(key);
+        if (it != objects_.end())
+            targets.push_back( it->second );
     }
     return targets;
 }
