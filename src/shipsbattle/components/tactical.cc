@@ -1,5 +1,6 @@
 #include <shipsbattle/components/tactical.h>
 #include <shipsbattle/components/subsystems/weapon.h>
+#include <shipsbattle/objects/targets.h>
 
 #include <ugdk/action/3D/element.h>
 #include <ugdk/action/3D/scene3d.h>
@@ -35,9 +36,20 @@ void Tactical::Update(double dt) {
         weapon->Update(dt);
     }
 }
-void Tactical::FireAll(subsystems::DamageableSystem* target) {
+void Tactical::FireAll(const std::vector<std::shared_ptr<objects::TargetData>>& targets) {
+    std::vector<objects::Target> actual_targets;
+    actual_targets.reserve(targets.size() * 2);
+    for (auto tdata : targets) {
+        auto systems = tdata->GetPossibleTargets();
+        actual_targets.insert(actual_targets.end(), systems.begin(), systems.end());
+    }
+
     for (auto weapon : weapons_) {
-        weapon->TryFire(target);
+        if (!weapon->CanFire()) continue;
+
+        for (auto target : actual_targets) {
+            if (weapon->TryFire(target)) break;
+        }
     }
 }
 

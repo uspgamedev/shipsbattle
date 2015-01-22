@@ -6,6 +6,9 @@
 #include <unordered_map>
 
 namespace shipsbattle {
+namespace objects {
+class TargetData;
+}
 namespace components {
 namespace subsystems {
 class DamageableSystem;
@@ -24,7 +27,8 @@ public:
     size_t GetNumWeapons() const { return weapons_.size(); }
 
     void Update(double dt) override;
-    void FireAll(subsystems::DamageableSystem* target);
+
+    void FireAll(const std::vector<std::shared_ptr<objects::TargetData>>& targets);
 
 protected:
     std::vector<std::shared_ptr<subsystems::Weapon>>    weapons_;
