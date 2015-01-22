@@ -1,6 +1,7 @@
 #include <shipsbattle/components/navigation.h>
 #include <shipsbattle/components/subsystems/sensorarray.h>
 #include <shipsbattle/objects/objecttypes.h>
+#include <shipsbattle/objects/ship.h>
 
 #include <ugdk/action/3D/element.h>
 #include <ugdk/action/3D/scene3d.h>
@@ -9,10 +10,15 @@
 
 #include <LinearMath/btVector3.h>
 
+#include <unordered_set>
+
 using std::shared_ptr;
 using ugdk::debug::Log;
 using ugdk::debug::LogLevel;
 using shipsbattle::components::subsystems::SensorArray;
+using shipsbattle::objects::Ship;
+using shipsbattle::objects::TargetData;
+using shipsbattle::objects::TargetSet;
 
 namespace shipsbattle {
 namespace components {
@@ -40,11 +46,35 @@ void Navigation::Update(double dt) {
         if (sensor->elapsed_ > sensor->refresh_rate_) {
             sensor->elapsed_ = 0.0;
             // run sensor sweep
-            auto ships = owner()->scene().physics()->ContactQuery(objects::ObjectTypes::SHIP, sensor->world_position(), sensor->maximum_range());
-            Log(LogLevel::INFO, "Navigation System", "<<< RUNNING SENSOR SWEEP >>>");
-            for (auto ship : ships) {
-                Log(LogLevel::INFO, "Navigation System", "Detected ship '" + ship.lock()->name() + "'");
+            auto sensor_data = owner()->scene().physics()->ContactQuery(objects::ObjectTypes::SHIP, sensor->world_position(), sensor->maximum_range());
+            
+            // get old list of object keys
+            std::unordered_set<std::string> obj_keys;
+            obj_keys.reserve(objects_.size());
+            for (auto kv : objects_) {
+                obj_keys.insert(kv.first);
             }
+            // update object map with new objects
+            for (auto weak_obj : sensor_data) {
+                auto obj = weak_obj.lock();
+                if (obj->marked_for_removal()) continue;
+                if (obj->name() == owner()->name()) continue;
+                auto it_key = obj_keys.find(obj->name());
+                if (it_key == obj_keys.end()) {
+                    // obj is not in our old objects_ map.
+                    objects_[obj->name()] = std::make_shared<TargetData>(obj);
+                }
+                else {
+                    // obj is already on our old objects_ map, no need to do anything with it.
+                    obj_keys.erase(it_key);
+                }
+            }
+            // update object map removing old objects
+            for (auto key : obj_keys) {
+                objects_.erase(key);
+                targets_.erase(key);
+            }
+
             /*
             -navigation (isso aqui) que tem que manter info de alvos (lista e atuais), com interface pra mudar e listar alvos.
             -ai os controllers (no caso soh o PlayerController) simplesmente usa essa interface pra mudar alvos.
@@ -63,6 +93,42 @@ void Navigation::Update(double dt) {
             */
         }
     }
+}
+
+TargetSet Navigation::GetSensorObjects() {
+    TargetSet targets;
+    targets.reserve(objects_.size());
+    for (auto kv : objects_) {
+        targets.push_back(kv.second);
+    }
+    return targets;
+}
+
+std::shared_ptr<objects::TargetData> Navigation::ToggleTarget(const std::string& target_name, bool selected) {
+    auto tkey = targets_.find(target_name);
+    bool in_targets = tkey != targets_.end();
+    if (selected && !in_targets) {
+        targets_.insert(target_name);
+    }
+    else if (!selected && in_targets) {
+        targets_.erase(tkey);
+    }
+    auto tdata = objects_.find(target_name);
+    if (tdata == objects_.end()) return std::shared_ptr<objects::TargetData>();
+    return (*tdata).second;
+}
+
+TargetSet Navigation::GetTargets() {
+    TargetSet targets;
+    targets.reserve(targets_.size());
+    for (auto key : targets_) {
+        targets.push_back( objects_[key] );
+    }
+    return targets;
+}
+
+bool Navigation::IsTargeted(const std::string& target_name) const {
+    return targets_.count(target_name);
 }
 
 } // namespace components
