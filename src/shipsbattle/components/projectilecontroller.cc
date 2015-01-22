@@ -42,11 +42,11 @@ void ProjectileController::Update(double dt) {
         if (angle > angleToTarget)  angle = angleToTarget;
 
         perpendicular.normalize();
-        path = BtOgre::Convert::toOgre(dir.rotate(perpendicular, angle));
+        path = BtOgre::Convert::toOgre(dir.rotate(perpendicular, static_cast<btScalar>(angle)));
         path.normalise();
     }
     body->set_orientation(path);
-    body->ApplyImpulse(path * (projectile_.linear_speed() * dt * projectile_.mass()));
+    body->ApplyImpulse(path * static_cast<Ogre::Real>(projectile_.linear_speed() * dt * projectile_.mass()));
 }
 
 void ProjectileController::OnTaken() {

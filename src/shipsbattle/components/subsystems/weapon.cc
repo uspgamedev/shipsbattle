@@ -39,7 +39,7 @@ bool Weapon::CanFireAt(const objects::Target& target) {
     auto toTarget = target_pos - pos;
     dir.normalise();
     toTarget.normalise();
-    return dir.directionEquals(toTarget, Ogre::Degree(firing_angle_));
+    return dir.directionEquals(toTarget, Ogre::Degree(static_cast<Ogre::Real>(firing_angle_)));
 }
 bool Weapon::TryFire(const objects::Target& target) {
     if (CanFireAt(target) && elapsed_ <= 0.0) {

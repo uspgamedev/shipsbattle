@@ -212,8 +212,8 @@ void createSphere(const std::string& name, const float r, const int nRings=16, c
 
     //material
     Ogre::MaterialPtr mMat = Ogre::MaterialManager::getSingleton().create("AmmoSphere", "General", true);
-    mMat->getTechnique(0)->getPass(0)->setDiffuse(Ogre::ColourValue(1.0, 0.1, 0));
-    mMat->getTechnique(0)->getPass(0)->setEmissive(Ogre::ColourValue(1.0, 0.1, 0));
+    mMat->getTechnique(0)->getPass(0)->setDiffuse(Ogre::ColourValue(1.0f, 0.1f, 0.0f));
+    mMat->getTechnique(0)->getPass(0)->setEmissive(Ogre::ColourValue(1.0f, 0.1f, 0.0f));
     pSphereVertex->setMaterialName("AmmoSphere");
 }
 
@@ -224,7 +224,7 @@ Ship createShip(const std::string& name) {
 void AddSubHull(Ship& ship, const std::string& name, double radius, double x, double y, double z) {
     shipsbattle::components::Hull* hull = ship.hull();
     shipsbattle::components::subsystems::SubHull* sh = new shipsbattle::components::subsystems::SubHull(name);
-    sh->SetVolume(radius, btVector3(x, y, z));
+    sh->SetVolume(radius, btVector3(static_cast<btScalar>(x), static_cast<btScalar>(y), static_cast<btScalar>(z)));
     hull->AddSubHull(std::shared_ptr<shipsbattle::components::subsystems::SubHull>(sh));
 }
 
@@ -238,13 +238,13 @@ int main(int argc, char* argv[]) {
     
     // create 3D scene
     ourscene = new ugdk::action::mode3d::Scene3D(btVector3(0.0, 0.0, 0.0));
-    ourscene->manager()->setAmbientLight(Ogre::ColourValue(.7, .7, .7));
+    ourscene->manager()->setAmbientLight(Ogre::ColourValue(.7f, .7f, .7f));
     // set some basic stuff our "space" scenes will need.
     ourscene->ShowFrameStats();
     ourscene->manager()->setSkyBox(true, "Backgrounds/Nebula1");
     
     // prepare our simple test mesh for projectiles
-    createSphere("Ammo", 0.1);
+    createSphere("Ammo", 0.1f);
 
     // create Player ship
     Ship player = createShip("Player");

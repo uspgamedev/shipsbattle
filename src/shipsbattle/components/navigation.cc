@@ -128,7 +128,7 @@ TargetSet Navigation::GetTargets() {
 }
 
 bool Navigation::IsTargeted(const std::string& target_name) const {
-    return targets_.count(target_name);
+    return targets_.count(target_name) >= 0;
 }
 
 } // namespace components

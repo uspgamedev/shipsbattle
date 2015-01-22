@@ -67,7 +67,7 @@ Projectile::Projectile(const Ship& parent_ship, const ProjectileModel& model, co
         double shot_speed = shot_vel.length(); // speed in game units /s
         cout << "Speed=" << shot_speed << "; rawDmg=" << model.damage() << "; speedDmg=" << model.GetBonusDamage(shot_speed) << endl;
         auto damage = (model.damage() + model.GetBonusDamage(shot_speed)) / pts.size();
-        shot_vel /= pts.size();
+        shot_vel /= static_cast<Ogre::Real>(pts.size());
         // for each collision point
         for (auto pt : pts) {
             auto localPtB = pt.world_positionB - BtOgre::Convert::toBullet(ship.body()->position());
