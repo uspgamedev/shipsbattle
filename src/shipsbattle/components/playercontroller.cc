@@ -1,5 +1,8 @@
 #include <shipsbattle/components/playercontroller.h>
 #include <shipsbattle/components/tactical.h>
+#include <shipsbattle/components/navigation.h>
+#include <shipsbattle/components/subsystems/damageablesystem.h>
+
 #include <ugdk/input/module.h>
 #include <ugdk/input/joystick.h>
 #include <ugdk/action/3D/element.h>
@@ -51,10 +54,36 @@ void PlayerController::Handle(const ugdk::input::MouseButtonPressedEvent& ev) {
     if (ev.button == ugdk::input::MouseButton::LEFT) {
         cout << "FIRE" << endl;
         auto tact = owner()->component<Tactical>();
-        tact->FireAll(target_);
+        auto nav = owner()->component<Navigation>();
+        tact->FireAll(nav->GetTargets());
     }
     else if (ev.button == ugdk::input::MouseButton::RIGHT) {
         cout << "TARGET CYCLE" << endl;
+        auto nav = owner()->component<Navigation>();
+        for (auto tdata : nav->GetTargets()) {
+
+            bool mark_next = false;
+            bool cycled = false;
+            std::string prev_name;
+            for (auto sys : tdata->GetPossibleTargets()) {
+                if (mark_next) {
+                    tdata->ToggleTarget(prev_name, false);
+                    tdata->ToggleTarget(sys->name(), true);
+                    cout << "New Target: " << tdata->object()->name() << ":" << sys->name() << " (old: " << prev_name << ")" << endl;
+                    cycled = true;
+                    break;
+                }
+                prev_name = sys->name();
+                mark_next = tdata->IsTargeted(prev_name);
+            }
+            if (!cycled) {
+                tdata->ToggleTarget(prev_name, false);
+                auto sys = tdata->GetPossibleTargets().front();
+                tdata->ToggleTarget(sys->name(), true);
+                cout << "New Target: " << tdata->object()->name() << ":" << sys->name() << " (old: " << prev_name << ")" << endl;
+            }
+
+        }
     }
 }
 

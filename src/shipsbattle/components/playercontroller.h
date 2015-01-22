@@ -7,9 +7,6 @@
 
 namespace shipsbattle {
 namespace components {
-namespace subsystems {
-class DamageableSystem;
-}
 
 class PlayerController : public UpdateableComponent,
                          public ugdk::system::Listener<ugdk::input::MouseWheelEvent>,
@@ -39,14 +36,11 @@ public:
 
     void Update(double dt) override;
 
-    void set_target(subsystems::DamageableSystem* target) { target_ = target; }
-
 protected:
     void OnTaken() override;
 
 private:
     double speed_;
-    subsystems::DamageableSystem* target_;
 };
 
 inline std::type_index PlayerController::type() const {
