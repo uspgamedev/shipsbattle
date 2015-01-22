@@ -13,6 +13,8 @@ shipsbattle/objects/projectile.h
 shipsbattle/objects/projectile.cc
 shipsbattle/objects/projectilemodel.h
 shipsbattle/objects/projectilemodel.cc
+shipsbattle/objects/targets.h
+shipsbattle/objects/targets.cc
 
 shipsbattle/components/updateablecomponent.h
 shipsbattle/components/updateablecomponent.cc
