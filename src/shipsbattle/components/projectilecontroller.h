@@ -4,6 +4,7 @@
 #include <shipsbattle/components/updateablecomponent.h>
 #include <shipsbattle/objects/projectilemodel.h>
 #include <shipsbattle/objects/ship.h>
+#include <shipsbattle/objects/targets.h>
 
 namespace shipsbattle {
 namespace components {
@@ -13,7 +14,7 @@ class DamageableSystem;
 
 class ProjectileController : public UpdateableComponent {
 public:
-    ProjectileController(const objects::Ship& parent_ship, const objects::ProjectileModel& projectile, subsystems::DamageableSystem* target);
+    ProjectileController(const objects::Ship& parent_ship, const objects::ProjectileModel& projectile, const objects::Target& target);
 
     virtual std::type_index type() const override;
 
@@ -21,7 +22,7 @@ public:
 
     objects::Ship parent_ship() const { return parent_ship_; }
     objects::ProjectileModel projectile() const { return projectile_; }
-    subsystems::DamageableSystem* target() const { return target_; }
+    objects::Target target() const { return target_; }
 
   protected:
     void OnTaken() override;
@@ -29,7 +30,7 @@ public:
 private:
     objects::Ship parent_ship_;
     objects::ProjectileModel projectile_;
-    subsystems::DamageableSystem* target_;
+    objects::Target target_;
     double elapsed_;
 };
 

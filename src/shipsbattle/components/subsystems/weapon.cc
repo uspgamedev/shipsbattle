@@ -1,4 +1,5 @@
 #include <shipsbattle/components/subsystems/weapon.h>
+#include <shipsbattle/objects/targets.h>
 
 #include <ugdk/action/3D/component/body.h>
 #include <ugdk/action/3D/element.h>
@@ -25,7 +26,11 @@ void Weapon::OnRecharge(double energy) {
     set_energy(this->energy() + energy);
 }
 
-bool Weapon::CanFireAt(DamageableSystem* target) {
+bool Weapon::CanFire() const {
+    return !disabled() && activated() && (elapsed_ <= 0.0);
+}
+
+bool Weapon::CanFireAt(const objects::Target& target) {
     if (disabled() || !activated()) return false;
 
     auto target_pos = BtOgre::Convert::toOgre(target->world_position());
@@ -34,9 +39,9 @@ bool Weapon::CanFireAt(DamageableSystem* target) {
     auto toTarget = target_pos - pos;
     dir.normalise();
     toTarget.normalise();
-    return dir.directionEquals(toTarget, Ogre::Degree(firing_angle_));
+    return dir.directionEquals(toTarget, Ogre::Degree(static_cast<Ogre::Real>(firing_angle_)));
 }
-bool Weapon::TryFire(DamageableSystem* target) {
+bool Weapon::TryFire(const objects::Target& target) {
     if (CanFireAt(target) && elapsed_ <= 0.0) {
         if (Fire(target)) {
             elapsed_ = cooldown_;

@@ -34,6 +34,9 @@ public:
 
     void TakeDamage(double dmg, double piercing, double splash_radius, const btVector3& pos, const subsystems::DecaymentFunction& decayment);
 
+    std::vector<subsystems::DamageableSystem*> GetAllSubsystems() const;
+    subsystems::DamageableSystem* GetSubsystemByName(const std::string& sys_name);
+
 protected:
     void OnTaken() override;
 
@@ -42,7 +45,7 @@ protected:
 
     std::vector<std::shared_ptr<subsystems::SubHull>>    subhulls_;
     std::unordered_map<std::string, size_t>    subhull_indexes_;
-    std::vector<subsystems::DamageableSystem*>  damageables_;
+    std::unordered_map<std::string, subsystems::DamageableSystem*>  damageables_;
 
     btBroadphaseInterface* broadphase_;
     btDefaultCollisionConfiguration* config_;

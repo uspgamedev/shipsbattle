@@ -11,12 +11,13 @@ using ugdk::action::mode3d::component::Body;
 namespace shipsbattle {
 namespace components {
 
-ProjectileController::ProjectileController(const objects::Ship& parent_ship, const objects::ProjectileModel& projectile, subsystems::DamageableSystem* target)
+ProjectileController::ProjectileController(const objects::Ship& parent_ship, const objects::ProjectileModel& projectile, const objects::Target& target)
     : parent_ship_(parent_ship), projectile_(projectile), target_(target), elapsed_(0.0)
 {
 }
 
 void ProjectileController::Update(double dt) {
+    if (!target_.valid()) return;
     if (elapsed_ > projectile_.motion_lifetime()) return;
     elapsed_ += dt;
 
@@ -41,11 +42,11 @@ void ProjectileController::Update(double dt) {
         if (angle > angleToTarget)  angle = angleToTarget;
 
         perpendicular.normalize();
-        path = BtOgre::Convert::toOgre(dir.rotate(perpendicular, angle));
+        path = BtOgre::Convert::toOgre(dir.rotate(perpendicular, static_cast<btScalar>(angle)));
         path.normalise();
     }
     body->set_orientation(path);
-    body->ApplyImpulse(path * (projectile_.linear_speed() * dt * projectile_.mass()));
+    body->ApplyImpulse(path * static_cast<Ogre::Real>(projectile_.linear_speed() * dt * projectile_.mass()));
 }
 
 void ProjectileController::OnTaken() {

@@ -6,6 +6,16 @@ endif ()
 set(SHIPSBATTLE_SRC
 shipsbattle/main.cc
 
+shipsbattle/objects/objecttypes.h
+shipsbattle/objects/ship.h
+shipsbattle/objects/ship.cc
+shipsbattle/objects/projectile.h
+shipsbattle/objects/projectile.cc
+shipsbattle/objects/projectilemodel.h
+shipsbattle/objects/projectilemodel.cc
+shipsbattle/objects/targets.h
+shipsbattle/objects/targets.cc
+
 shipsbattle/components/updateablecomponent.h
 shipsbattle/components/updateablecomponent.cc
 shipsbattle/components/spacedust.h
@@ -22,14 +32,8 @@ shipsbattle/components/powersystem.h
 shipsbattle/components/powersystem.cc
 shipsbattle/components/tactical.h
 shipsbattle/components/tactical.cc
-
-shipsbattle/objects/objecttypes.h
-shipsbattle/objects/ship.h
-shipsbattle/objects/ship.cc
-shipsbattle/objects/projectile.h
-shipsbattle/objects/projectile.cc
-shipsbattle/objects/projectilemodel.h
-shipsbattle/objects/projectilemodel.cc
+shipsbattle/components/navigation.h
+shipsbattle/components/navigation.cc
 
 shipsbattle/components/subsystems/typedefs.h
 shipsbattle/components/subsystems/damageablesystem.h
@@ -43,6 +47,8 @@ shipsbattle/components/subsystems/weapon.h
 shipsbattle/components/subsystems/weapon.cc
 shipsbattle/components/subsystems/projectileweapon.h
 shipsbattle/components/subsystems/projectileweapon.cc
+shipsbattle/components/subsystems/sensorarray.h
+shipsbattle/components/subsystems/sensorarray.cc
 )
 
 include_directories (${CMAKE_CURRENT_SOURCE_DIR})

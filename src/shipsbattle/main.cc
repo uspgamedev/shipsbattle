@@ -10,7 +10,7 @@
 #include <shipsbattle/components/subsystems/typedefs.h>
 #include <shipsbattle/components/hull.h>
 #include <shipsbattle/components/subsystems/subhull.h>
-
+#include <shipsbattle/components/navigation.h>
 #include <shipsbattle/components/timedlife.h>
 
 #include <btBulletDynamicsCommon.h>
@@ -37,6 +37,7 @@ using std::endl;
 using shipsbattle::objects::Ship;
 using shipsbattle::components::SpaceDust;
 using shipsbattle::components::PlayerController;
+using shipsbattle::components::Navigation;
 using namespace shipsbattle::components::subsystems::DecaymentFunctions;
 
 ugdk::action::mode3d::Scene3D *ourscene;
@@ -84,7 +85,7 @@ void CreateHUD(Ship& pla, Ship& enemy) {
 
     Ogre::OverlayContainer* panel = static_cast<Ogre::OverlayContainer*>(overlay_mgr->createOverlayElement("Panel", over_name + "/Panel"));
     panel->setMetricsMode(Ogre::GMM_PIXELS);
-    panel->setPosition(450, 0.0);
+    panel->setPosition(674, 0.0);
     panel->setDimensions(350, 120);
     panel->setMaterialName("BaseWhite");
     panel->addChild(plaHullStats);
@@ -211,19 +212,19 @@ void createSphere(const std::string& name, const float r, const int nRings=16, c
 
     //material
     Ogre::MaterialPtr mMat = Ogre::MaterialManager::getSingleton().create("AmmoSphere", "General", true);
-    mMat->getTechnique(0)->getPass(0)->setDiffuse(Ogre::ColourValue(1.0, 0.1, 0));
-    mMat->getTechnique(0)->getPass(0)->setEmissive(Ogre::ColourValue(1.0, 0.1, 0));
+    mMat->getTechnique(0)->getPass(0)->setDiffuse(Ogre::ColourValue(1.0f, 0.1f, 0.0f));
+    mMat->getTechnique(0)->getPass(0)->setEmissive(Ogre::ColourValue(1.0f, 0.1f, 0.0f));
     pSphereVertex->setMaterialName("AmmoSphere");
 }
 
 Ship createShip(const std::string& name) {   
-    return Ship(*ourscene, name, "AerOmar.mesh");
+    return Ship(*ourscene, name, "AerOmarOld.mesh");
 }
 
 void AddSubHull(Ship& ship, const std::string& name, double radius, double x, double y, double z) {
     shipsbattle::components::Hull* hull = ship.hull();
     shipsbattle::components::subsystems::SubHull* sh = new shipsbattle::components::subsystems::SubHull(name);
-    sh->SetVolume(radius, btVector3(x, y, z));
+    sh->SetVolume(radius, btVector3(static_cast<btScalar>(x), static_cast<btScalar>(y), static_cast<btScalar>(z)));
     hull->AddSubHull(std::shared_ptr<shipsbattle::components::subsystems::SubHull>(sh));
 }
 
@@ -231,18 +232,19 @@ int main(int argc, char* argv[]) {
     ugdk::system::Configuration config;
     config.base_path = "assets/";
     config.windows_list.front().title = "Ships Battle";
+    config.windows_list.front().size = ugdk::math::Integer2D(1024, 768);
     config.ogre_plugins.push_back("Plugin_ParticleFX");
     ugdk::system::Initialize(config);
     
     // create 3D scene
     ourscene = new ugdk::action::mode3d::Scene3D(btVector3(0.0, 0.0, 0.0));
-    ourscene->manager()->setAmbientLight(Ogre::ColourValue(.7, .7, .7));
+    ourscene->manager()->setAmbientLight(Ogre::ColourValue(.7f, .7f, .7f));
     // set some basic stuff our "space" scenes will need.
     ourscene->ShowFrameStats();
     ourscene->manager()->setSkyBox(true, "Backgrounds/Nebula1");
     
     // prepare our simple test mesh for projectiles
-    createSphere("Ammo", 0.1);
+    createSphere("Ammo", 0.1f);
 
     // create Player ship
     Ship player = createShip("Player");
@@ -262,7 +264,7 @@ int main(int argc, char* argv[]) {
     Ship enemy = createShip("Enemy");
     enemy.body()->Translate(0, 0, 80);
     AddSubHull(enemy, "Butt", 0.2, 0.0, 0.0, -3.6);
-    player->component<PlayerController>()->set_target( enemy.hull()->GetSubHull("Butt").get() );
+    player->component<Navigation>()->ToggleTarget("Enemy", true);
     //enemy->AddComponent(std::make_shared<shipsbattle::components::TimedLife>(15.0));
 
     CreateHUD(player, enemy);

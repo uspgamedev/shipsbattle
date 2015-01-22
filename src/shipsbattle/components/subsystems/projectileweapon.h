@@ -12,7 +12,7 @@ class ProjectileWeapon : public Weapon {
 public:
     ProjectileWeapon(const std::string& name);
 
-    bool Fire(DamageableSystem* target) override;
+    bool Fire(const objects::Target& target) override;
 
     /** Gets the projectile model this weapon uses to fire. */
     objects::ProjectileModel projectile() const { return projectile_; }
