@@ -5,7 +5,7 @@ namespace components {
 namespace subsystems {
 
 SensorArray::SensorArray(const std::string& name)
-: PoweredSystem(name), elapsed_(0.0), refresh_rate_(0.5), maximum_range_(1000.0)
+: PoweredSystem(name), elapsed_(0.0), refresh_rate_(1.0), maximum_range_(1000.0)
 {
 }
 
