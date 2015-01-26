@@ -34,6 +34,8 @@ shipsbattle/components/tactical.h
 shipsbattle/components/tactical.cc
 shipsbattle/components/navigation.h
 shipsbattle/components/navigation.cc
+shipsbattle/components/motion.h
+shipsbattle/components/motion.cc
 
 shipsbattle/components/subsystems/typedefs.h
 shipsbattle/components/subsystems/damageablesystem.h
@@ -49,6 +51,10 @@ shipsbattle/components/subsystems/projectileweapon.h
 shipsbattle/components/subsystems/projectileweapon.cc
 shipsbattle/components/subsystems/sensorarray.h
 shipsbattle/components/subsystems/sensorarray.cc
+shipsbattle/components/subsystems/impulseengine.h
+shipsbattle/components/subsystems/impulseengine.cc
+shipsbattle/components/subsystems/thruster.h
+shipsbattle/components/subsystems/thruster.cc
 )
 
 include_directories (${CMAKE_CURRENT_SOURCE_DIR})
