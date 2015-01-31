@@ -10,14 +10,19 @@ Thruster::Thruster(const std::string& name)
 }
 
 double Thruster::NeedsRecharge() {
-    return 1;
+    return spent_energy_;
 }
 void Thruster::OnRecharge(double energy) {
-
+    spent_energy_ -= energy;
 }
 
-void Thruster::Update(double dt) {
+double Thruster::current_thrust_power() const {
+    return thrust_power_ * efficiency_;
+}
+
+void Thruster::GenerateThrust(double power, double dt) {
     
+    spent_energy_ += energy_consumption_ * dt * power / thrust_power_;
 }
 
 } // namespace subsystems
