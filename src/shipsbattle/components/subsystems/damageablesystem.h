@@ -43,7 +43,7 @@ public:
     void set_required(bool is_required) { required_ = is_required; }
     /** Armor rating of this hull. More armor means less damage taken.*/
     double disabled_percentage() const { return disabled_percentage_; }
-    void set_disabled_percentage(double dis_pc) { disabled_percentage_ = dis_pc; }
+    void set_disabled_percentage(double dis_pc);
     /** If this subsystem is destroyed.*/
     bool destroyed() const { return hitpoints_ <= 0.0; }
     /** If this subsystem is disabled.*/

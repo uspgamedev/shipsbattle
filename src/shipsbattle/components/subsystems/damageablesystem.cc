@@ -83,6 +83,12 @@ double DamageableSystem::radius() const {
     return static_cast<double>(shape_->getRadius());
 }
 
+void DamageableSystem::set_disabled_percentage(double dis_pc) { 
+    disabled_percentage_ = dis_pc; 
+    if (disabled_percentage_ < 0.0) disabled_percentage_ = 0.0;
+    if (disabled_percentage_ > 1.0) disabled_percentage_ = 1.0;
+}
+
 void DamageableSystem::RegisteredTo(ugdk::action::mode3d::Component* sys) {
     parent_ = sys;
 
