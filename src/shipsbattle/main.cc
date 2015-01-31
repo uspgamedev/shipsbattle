@@ -14,6 +14,8 @@
 #include <shipsbattle/components/timedlife.h>
 
 #include <btBulletDynamicsCommon.h>
+#include <BulletDynamics/MLCPSolvers/btSolveProjectedGaussSeidel.h>
+#include <BulletDynamics/MLCPSolvers/btDantzigSolver.h>
 #include <OgreSceneManager.h>
 #include <OgreOverlaySystem.h>
 
@@ -41,6 +43,50 @@ using shipsbattle::components::Navigation;
 using namespace shipsbattle::components::subsystems::DecaymentFunctions;
 
 ugdk::action::mode3d::Scene3D *ourscene;
+
+
+#include <Eigen/Core>
+#include <Eigen/SVD>
+class Matrix : public Eigen::MatrixXd {
+public:
+    Matrix(int rows, int cols) : Eigen::MatrixXd(rows, cols) {}
+
+    Eigen::MatrixXd pseudoInverse(double epsilon = std::numeric_limits<double>::epsilon())
+    {
+        Eigen::JacobiSVD<Eigen::MatrixXd> svd(*this, Eigen::ComputeThinU | Eigen::ComputeThinV);
+        double tolerance = epsilon * std::max(cols(), rows()) *svd.singularValues().array().abs()(0);
+        return svd.matrixV() *  (svd.singularValues().array().abs() > tolerance).select(svd.singularValues().array().inverse(), 0).matrix().asDiagonal() * svd.matrixU().adjoint();
+    }
+};
+void testeMLCP() {
+    int N = 4;
+    btVector3 dir = btVector3(0.0, 0.0, 1.0);
+    btVector3 p1 = btVector3(0.0, 0.0, 1.0);
+    btVector3 p2 = btVector3(0.0, 0.0, -1.0);
+    btVector3 p3 = btVector3(0.0, 1.0, 1.0);
+    btVector3 p4 = btVector3(0.0, -1.0, 1.0);
+    btVector3 p[] = { p1, p2, p3, p4 };
+    for (auto& pf : p) {
+        if (pf.length() <= 0.0) continue;
+        pf.normalize();
+    }
+
+    Matrix M = Matrix(3, N);
+    for (int i = 0; i < N; i++) {
+        M.col(i) = Eigen::Vector3d(p[i].x(), p[i].y(), p[i].z());
+    }
+    cout << "M is:\n" << M << endl;
+
+    Eigen::MatrixXd out = M.pseudoInverse();
+    cout << "Inverse is:\n" << out << endl;
+
+    Eigen::Vector3d eigenDir(dir.x(), dir.y(), dir.z());
+    cout << "EigenDir:\n" << eigenDir << endl;
+    Eigen::VectorXd result = out * eigenDir;
+    cout << "Result:\n" << result << endl;
+
+    cout << "ops" << endl;
+}
 
 void CreateHUD(Ship& pla, Ship& enemy) {
     Ogre::OverlayManager* overlay_mgr = Ogre::OverlayManager::getSingletonPtr();
@@ -229,6 +275,8 @@ void AddSubHull(Ship& ship, const std::string& name, double radius, double x, do
 }
 
 int main(int argc, char* argv[]) {
+    testeMLCP();
+
     ugdk::system::Configuration config;
     config.base_path = "assets/";
     config.windows_list.front().title = "Ships Battle";
