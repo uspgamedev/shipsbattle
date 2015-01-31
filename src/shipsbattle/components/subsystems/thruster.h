@@ -28,6 +28,8 @@ public:
 
     /** Gets the current amount of thrust the engine can output, according to power levels and efficiency. */
     double current_thrust_power() const;
+    /** Gets the rotational axis in which this thruster rotates the ship around. */
+    Ogre::Vector3 rotational_axis();
 
 protected:
     // thrust directions

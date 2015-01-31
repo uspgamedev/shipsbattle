@@ -52,9 +52,15 @@ public:
     @param dir Direction to turn (point) towards, should be relative to the object. For example, since forward is UnitZ, turning to UnitZ will cause nothing.
     @param power Amount of power to use in turning. Should be in the range [0, 1], with 0 being 'no power/stop', and 1 being full power.
         The actual power the thrusters will use depend on their integrity and power levels, but power 1 here will try to use the current full power.
-    @param duration Time, in seconds, which the thrusters shall maintain this rotation. Default -1 (and any negative value) means the thrusters will maintain
-        this motion for the required time for the ship to point towards the desired direction. */
-    void TurnTowards(const Ogre::Vector3& dir, double power, double duration = -1);
+    @param duration Time, in seconds, which the thrusters shall maintain this rotation. */
+    void TurnTowards(const Ogre::Vector3& dir, double power, double duration);
+    /** Makes the object turn (rotate) around the desired axis with desired power, if possible, for duration. If axis or power are zero,
+    then the resulting rotation will be one to stop the object's rotation. This will cancel previous turn commands.
+    @param axis Axis to rotate around, relative to the object. Since this method will always turn to one way, to turn to the other axis should be reversed
+        (user can do this manually or pass a negative power value).
+    @param power Amount of power to use in turning. Should be in the range [-1, 1], with 0 being 'no power/stop', 1 being full power clockwise around the axis,
+        and -1 being full power counterclockwise (reversed axis). */
+    void TurnAround(const Ogre::Vector3& axis, double power, double duration);
 
     /** Returns if the thrusters are currently performing any turning commands. */
     bool IsTurning() const;
@@ -103,9 +109,20 @@ protected:
     double move_stop_threshold_; //GU/s threshold to force 0 linear velocity.
     double angle_threshold_; //angle (radians) threshold to assume 2 vectors are pointing the same way.
     int last_active_engines_; // number of engines that were active
+    int last_active_thrusters_;
+    Ogre::Vector3 generated_torque_;
 
     void DoMove(const Ogre::Vector3& dir, double power, double dt);
-    void CalculateEnginesOutput();
+    void DoTurn(const Ogre::Vector3& axis, double power, double dt);
+    struct MotionSystemPair {
+        Ogre::Vector3 vector;
+        double output;
+
+        MotionSystemPair() {}
+        MotionSystemPair(const Ogre::Vector3& v, double out) : vector(v), output(out) {}
+    };
+    bool ResolveMotionSystem(MotionData& data, const Ogre::Vector3& target, const std::vector<MotionSystemPair>& values, int& last_active);
+    void CalculateOutputValues(Eigen::VectorXd& outputs, const Eigen::VectorXd& factors);
 };
 
 inline std::type_index Motion::type() const {

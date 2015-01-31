@@ -77,8 +77,14 @@ void Motion::Update(double dt) {
             move_.status = STOPPING;
         }
     }
+    if (turn_.status == STOPPED) {
+        if (body->angular_velocity().length() > move_stop_threshold_) {
+            turn_.status = STOPPING;
+        }
+    }
 
     // MOVE
+    generated_torque_ *= 0.0;
     if (move_.status == ACTIVE) {
         if (move_.elapsed <= move_.duration) {
             move_.elapsed += dt;
@@ -99,6 +105,24 @@ void Motion::Update(double dt) {
     }
 
     // TURN
+    if (turn_.status == ACTIVE) {
+        if (turn_.elapsed <= turn_.duration) {
+            turn_.elapsed += dt;
+            DoTurn(turn_.direction + generated_torque_, turn_.power, dt);
+        }
+        else {
+            turn_.status = STOPPED;
+        }
+    }
+    else if (turn_.status == STOPPING) {
+        auto stop_dir = body->angular_velocity() * -1;
+        stop_dir.normalise();
+        DoTurn(stop_dir, turn_.power, dt);
+        if (body->angular_velocity().length() <= move_stop_threshold_) {
+            turn_.status = STOPPED;
+            body->set_angular_velocity(Ogre::Vector3::ZERO);
+        }
+    }
 }
 
 void Motion::MoveTowards(const Ogre::Vector3& dir, double power, double duration) {
@@ -126,11 +150,33 @@ bool Motion::IsMoving() const {
 }
 
 void Motion::StopMoving() {
-
+    MoveTowards(Ogre::Vector3::ZERO, 0.0, 0.0);
 }
 
 void Motion::TurnTowards(const Ogre::Vector3& dir, double power, double duration) {
+    TurnAround(Ogre::Vector3::UNIT_Z.crossProduct(dir.normalisedCopy()), power, duration);
+}
+void Motion::TurnAround(const Ogre::Vector3& axis, double power, double duration) {
+    Ogre::Vector3 ang_dir = axis;
+    MotionStatus stat = ACTIVE;
+    auto len = ang_dir.length();
+    if (len == 0.0 || power == 0.0) {
+        power = 1.0;
+        ang_dir = owner()->component<Body>()->angular_velocity() * -1;
+        ang_dir.normalise();
+        stat = STOPPING;
+    }
+    else if (len != 1.0) {
+        ang_dir.normalise();
+    }
 
+    if (power < 0.0) {
+        ang_dir *= -1;
+        power = -power;
+    }
+    else if (power > 1.0) power = 1.0;
+
+    turn_.Reset(ang_dir, power, duration, stat);
 }
 
 bool Motion::IsTurning() const {
@@ -138,7 +184,7 @@ bool Motion::IsTurning() const {
 }
 
 void Motion::StopTurning() {
-
+    TurnAround(Ogre::Vector3::ZERO, 0.0, 0.0);
 }
 
 void Motion::AllStop() {
@@ -148,28 +194,60 @@ void Motion::AllStop() {
 
 void Motion::DoMove(const Ogre::Vector3& dir, double power, double dt) {
     std::vector<std::shared_ptr<subsystems::ImpulseEngine>> active_engines;
+    std::vector<MotionSystemPair> values;
     for (auto engine : impulse_engines_) {
         if (!engine->activated() || engine->disabled()) continue;
         active_engines.push_back(engine);
+        auto eng_dir = engine->GetVectorClosestTo(dir);
+        values.push_back(MotionSystemPair(eng_dir, engine->current_exhaust_power()));
+        engine->set_current_direction(eng_dir);
     }
+    
+    if (!ResolveMotionSystem(move_, dir, values, last_active_engines_)) 
+        return;
+
+    // do engine update / apply impulse
+    for (int i = 0; i < active_engines.size(); i++) {
+        auto torque = active_engines[i]->GenerateThrust(move_.outputs(i) * power, dt);
+        if (cancel_move_torque_)
+            generated_torque_ += torque;
+    }
+}
+void Motion::DoTurn(const Ogre::Vector3& axis, double power, double dt) {
+    std::vector<std::shared_ptr<subsystems::Thruster>> active_thrusters;
+    std::vector<MotionSystemPair> values;
+    for (auto thruster : thrusters_) {
+        if (!thruster->activated() || thruster->disabled()) continue;
+        active_thrusters.push_back(thruster);
+        auto ang_dir = thruster->rotational_axis();
+        values.push_back(MotionSystemPair(ang_dir, thruster->current_thrust_power()));
+    }
+
+    if (!ResolveMotionSystem(turn_, axis, values, last_active_thrusters_))
+        return;
+
+    // do engine update / apply impulse
+    for (int i = 0; i < active_thrusters.size(); i++) {
+        active_thrusters[i]->GenerateThrust(turn_.outputs(i) * power, dt);
+    }
+}
+
+bool Motion::ResolveMotionSystem(MotionData& data, const Ogre::Vector3& target, const std::vector<MotionSystemPair>& values, int& last_active) {
     // this function has several FOR loops over active_engines.
     // unfortunately, at the point of this writing I could not see a way around this
     // since the work done in one requires that the previous one has already been executed
 
-    if ((dir.angleBetween(move_.direction).valueRadians() > angle_threshold_) || (last_active_engines_ != active_engines.size())) {
-        last_active_engines_ = active_engines.size();
-        if (active_engines.size() <= 0) return;
+    if ((target.angleBetween(data.direction).valueRadians() > angle_threshold_) || (last_active != values.size())) {
+        last_active = values.size();
+        if (values.size() <= 0) return;
 
         //get list of active engines, calculate engine factors and store maximal outputs.
-        Matrix dirs = Matrix(3, active_engines.size());
-        move_.outputs.resize(active_engines.size());
-        for (int i = 0; i < active_engines.size(); i++) {
-            auto engine = active_engines[i];
-            auto eng_dir = engine->GetVectorClosestTo(dir);
-            eng_dir.normalise();
-            dirs.col(i) = Eigen::Vector3d(eng_dir.x, eng_dir.y, eng_dir.z);
-            move_.outputs(i) = engine->current_exhaust_power();
-            engine->set_current_direction(eng_dir);
+        Matrix dirs = Matrix(3, values.size());
+        data.outputs.resize(values.size());
+        for (int i = 0; i < values.size(); i++) {
+            auto& vec = values[i].vector;
+            dirs.col(i) = Eigen::Vector3d(vec.x, vec.y, vec.z);
+            data.outputs(i) = values[i].output;
         }
         /* for each engine i, we have its vector Vi: closest vector it can point at towards
         target direction D.
@@ -185,34 +263,27 @@ void Motion::DoMove(const Ogre::Vector3& dir, double power, double dt) {
         F = inverseV * D
         Where inverseV is the pseudoinverse matrix of V (since V can be non-square).
         */
-        move_.factors = dirs.pseudoInverse() * Eigen::Vector3d(dir.x, dir.y, dir.z);
+        data.factors = dirs.pseudoInverse() * Eigen::Vector3d(target.x, target.y, target.z);
 
         // normalize factors and remove negative coefficients
-        if (move_.factors.maxCoeff() <= 0.0)    return;
-        move_.factors /= (1.0 / move_.factors.maxCoeff());
-        double reference_output = 0.0;
-        for (int i = 0; i < active_engines.size(); i++) {
-            if (move_.factors(i) < 0.0)   move_.factors(i) = 0.0;
+        if (data.factors.maxCoeff() <= 0.0)    return;
+        data.factors /= (1.0 / data.factors.maxCoeff());
+        for (int i = 0; i < values.size(); i++) {
+            if (data.factors(i) < 0.0)   data.factors(i) = 0.0;
         }
     }
 
     // calculate actual engine outputs.
     //   doing this here prevents us from having to add extra logic to handle other cases in which 
     //   we would need to recalculate engines output.
-    move_.outputs.resize(active_engines.size());
-    for (int i = 0; i < active_engines.size(); i++) {
-        move_.outputs(i) = active_engines[i]->current_exhaust_power();
+    data.outputs.resize(values.size());
+    for (int i = 0; i < values.size(); i++) {
+        data.outputs(i) = values[i].output;
     }
-    CalculateEnginesOutput();
-
-    // do engine update / apply impulse
-    for (int i = 0; i < active_engines.size(); i++) {
-        active_engines[i]->GenerateThrust(move_.outputs(i) * power, dt);
-        //TODO: collect generated torque
-    }
+    CalculateOutputValues(data.outputs, data.factors);
 }
 
-void Motion::CalculateEnginesOutput() {
+void Motion::CalculateOutputValues(Eigen::VectorXd& outputs, const Eigen::VectorXd& factors) {
     /* For each engine (index) i, we have:
         0 <= Pi <= Mi, where Mi is the maximal engine output, and Pi is the adjusted output
                        which should be used now.
@@ -228,16 +299,16 @@ void Motion::CalculateEnginesOutput() {
         all Pi <= Mi inequalities.
     */
     int i;
-    for (i = 0; i < move_.factors.size(); i++) if (move_.factors(i) > 0.0)  break;
-    for (int j = 0; j < move_.outputs.size(); j++) {
-        if (move_.factors(j) > 0.0)
-            move_.outputs(j) = move_.outputs(j) * move_.factors(i) / move_.factors(j);
+    for (i = 0; i < factors.size(); i++) if (factors(i) > 0.0)  break;
+    for (int j = 0; j < outputs.size(); j++) {
+        if (factors(j) > 0.0)
+            outputs(j) = outputs(j) * factors(i) / factors(j);
     }
-    double Pi = move_.outputs.minCoeff();
+    double Pi = outputs.minCoeff();
 
     // With an initial Pi, we can simply use the equality formula to calculate all Pi's
-    for (int j = 0; j < move_.outputs.size(); j++) {
-        move_.outputs(j) = Pi * move_.factors(j) / move_.factors(i);
+    for (int j = 0; j < outputs.size(); j++) {
+        outputs(j) = Pi * factors(j) / factors(i);
     }
 }
 
