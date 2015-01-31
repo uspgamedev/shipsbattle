@@ -23,6 +23,24 @@ void ImpulseEngine::OnRecharge(double energy) {
     spent_energy_ -= energy;
 }
 
+Ogre::Vector3 ImpulseEngine::GetVectorClosestTo(const Ogre::Vector3& dir) {
+    //CHECK: when (not if) we refactor this subsystem to have a generic thrust direction region,
+    // this method will need to be generalized into this 'generic region' object.
+    if (exhaust_direction_.angleBetween(dir).valueRadians() <= exhaust_angle_)
+        return dir;
+
+    auto exhaust_dir = BtOgre::Convert::toBullet(exhaust_direction_);
+    auto axis = exhaust_dir.cross(BtOgre::Convert::toBullet(dir));
+    axis.normalize();
+    auto path = BtOgre::Convert::toOgre(exhaust_dir.rotate(axis, static_cast<btScalar>(exhaust_angle_)));
+    path.normalise();
+    return path;
+}
+
+void ImpulseEngine::set_exhaust_direction(const Ogre::Vector3& dir) {
+    exhaust_direction_ = dir.normalisedCopy();
+}
+
 double ImpulseEngine::current_exhaust_power() const {
     //CHECK: perhaps also take into account stored energy?
     return exhaust_power_ * efficiency_;

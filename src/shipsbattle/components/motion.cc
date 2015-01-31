@@ -89,7 +89,9 @@ void Motion::Update(double dt) {
         }
     }
     else if (move_.status == STOPPING) {
-        DoMove(body->linear_velocity()*-1, move_.power, dt);
+        auto stop_dir = body->linear_velocity() * -1;
+        stop_dir.normalise();
+        DoMove(stop_dir, move_.power, dt);
         if (body->linear_velocity().length() <= move_stop_threshold_) {
             move_.status = STOPPED;
             body->set_linear_velocity(Ogre::Vector3::ZERO);

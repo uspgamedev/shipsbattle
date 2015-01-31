@@ -19,21 +19,22 @@ public:
 
     /** Returns the vector in which this engine can point at that is closest to (minimum angle)
     the given direction vector. */
-    Ogre::Vector3 GetVectorClosestTo(const Ogre::Vector3& dir) { return Ogre::Vector3::ZERO; }
+    Ogre::Vector3 GetVectorClosestTo(const Ogre::Vector3& dir);
 
     /** Default direction the engine is pointing at. */
     Ogre::Vector3 exhaust_direction() const { return exhaust_direction_; }
-    void set_exhaust_direction(const Ogre::Vector3& dir) { exhaust_direction_ = dir; }
+    void set_exhaust_direction(const Ogre::Vector3& dir);
     /** Angle to the exhaust direction in which the engine can point at, in radians. 
     This forms a cone in which the engine can direct its exhaust. */
     double exhaust_angle() const { return exhaust_angle_; }
     void set_exhaust_angle(double angle) { exhaust_angle_ = angle; }
+
     /** Amount of thrust the engine can output at regular power levels and efficiency. */
     double exhaust_power() const { return exhaust_power_; }
     void set_exhaust_power(double power) { exhaust_power_ = power; }
+
     /** Gets the current amount of thrust the engine can output, according to power levels and efficiency. */
     double current_exhaust_power() const;
-
     /** Current direction the engine is pointing at. Set by Motion system. */
     Ogre::Vector3 current_direction() const { return current_direction_; }
 
