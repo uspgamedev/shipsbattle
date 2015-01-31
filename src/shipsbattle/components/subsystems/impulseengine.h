@@ -29,7 +29,8 @@ public:
     double exhaust_angle() const { return exhaust_angle_; }
     void set_exhaust_angle(double angle) { exhaust_angle_ = angle; }
 
-    /** Amount of thrust the engine can output at regular power levels and efficiency. */
+    /** Amount of thrust the engine can output per second at regular power levels and efficiency. 
+        Unit is kg*GU/s^2 (mass times acceleration, in gameUnits/second^2). */
     double exhaust_power() const { return exhaust_power_; }
     void set_exhaust_power(double power) { exhaust_power_ = power; }
 

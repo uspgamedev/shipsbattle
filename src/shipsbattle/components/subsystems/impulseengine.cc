@@ -12,7 +12,8 @@ namespace components {
 namespace subsystems {
 
 ImpulseEngine::ImpulseEngine(const std::string& name)
-    : PoweredSystem(name), spent_energy_(0.0)
+: PoweredSystem(name), exhaust_direction_(Ogre::Vector3::NEGATIVE_UNIT_Z), exhaust_angle_(45.0), 
+exhaust_power_(100.0), current_direction_(Ogre::Vector3::NEGATIVE_UNIT_Z), spent_energy_(0.0)
 {
 }
 
