@@ -65,7 +65,7 @@ void PowerSystem::Update(double dt) {
     double total_needed = 0.0;
     for (auto sys : systems_) {
         if (sys->disabled() || !sys->activated() || (sys->NeedsRecharge() <= 0.0)) continue;
-        total_needed += sys->energy_consumption() * dt * sys->efficiency();
+        total_needed += sys->NeedsRecharge() * dt;
     }
     double energy_diff = total_output - total_needed;
     // calculate reserve power in batteries
@@ -97,7 +97,7 @@ void PowerSystem::Update(double dt) {
     double power_factor = (total_needed - missing_energy) / total_needed;
     for (auto sys : systems_) {
         if (sys->disabled() || !sys->activated()) continue;
-        double spent = sys->energy_consumption() * dt * sys->efficiency();
+        double spent = sys->NeedsRecharge() * dt;
         double recharge_amount = spent * power_factor;
         sys->OnRecharge(recharge_amount);
     }
