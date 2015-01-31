@@ -55,6 +55,8 @@ shipsbattle/components/subsystems/impulseengine.h
 shipsbattle/components/subsystems/impulseengine.cc
 shipsbattle/components/subsystems/thruster.h
 shipsbattle/components/subsystems/thruster.cc
+
+shipsbattle/utils/matrix.h
 )
 
 include_directories (${CMAKE_CURRENT_SOURCE_DIR})

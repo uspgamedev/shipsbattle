@@ -37,6 +37,7 @@ add_subdirectory(${UGDK_SUBDIR})
 configure_file(cmake/resources.cfg src/assets/resources.cfg)
 configure_file(cmake/resources_d.cfg src/assets/resources_d.cfg)
 
+include_directories(externals/eigen)
 add_subdirectory(src)
 
 
