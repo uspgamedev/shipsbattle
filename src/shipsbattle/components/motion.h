@@ -69,6 +69,13 @@ public:
     /** If we are actively using our thrusters to counteract any torque(rotation) inflicted by movement. */
     bool cancel_move_torque() const { cancel_move_torque_; }
     void set_cancel_move_torque(bool cancel) { cancel_move_torque_ = cancel; }
+    /** Speed (magnitude), in GameUnits/s, threshold to assume a velocity vector (linear or angular) is null (zero). */
+    double move_stop_threshold() const { return move_stop_threshold_; }
+    void set_move_stop_threshold(double threshold) { move_stop_threshold_ = threshold; }
+    /** Angle threshold, in radians, to assume 2 direction vectors are the same (pointing the same way). */
+    double angle_threshold() const { return angle_threshold_; }
+    void set_angle_threshold(double threshold) { angle_threshold_ = threshold; }
+
 
 protected:
     std::vector<std::shared_ptr<subsystems::ImpulseEngine>>    impulse_engines_;
