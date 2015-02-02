@@ -3,6 +3,9 @@
 #include <ugdk/action/3D/camera.h>
 #include <ugdk/action/3D/scene3d.h>
 #include <ugdk/action/3D/component/body.h>
+#include <ugdk/action/3D/component/view.h>
+#include <ugdk/action/3D/element.h>
+#include <ugdk/input/scancode.h>
 
 #include <shipsbattle/objects/ship.h>
 #include <shipsbattle/components/spacedust.h>
@@ -14,14 +17,13 @@
 #include <shipsbattle/components/timedlife.h>
 
 #include <btBulletDynamicsCommon.h>
-#include <BulletDynamics/MLCPSolvers/btSolveProjectedGaussSeidel.h>
-#include <BulletDynamics/MLCPSolvers/btDantzigSolver.h>
 #include <OgreSceneManager.h>
 #include <OgreOverlaySystem.h>
-
 #include <OgreMeshManager.h>
 #include <OgreHardwareBufferManager.h>
 #include <OgreSubMesh.h>
+#include <OgreManualObject.h>
+#include <OgreEntity.h>
 
 #include <memory>
 #include <iostream>
@@ -42,50 +44,102 @@ using shipsbattle::components::PlayerController;
 using shipsbattle::components::Navigation;
 using namespace shipsbattle::components::subsystems::DecaymentFunctions;
 
-ugdk::action::mode3d::Scene3D *ourscene;
+ugdk::action::mode3d::Scene3D *ourscene;  
 
+std::weak_ptr<ugdk::action::mode3d::Element> createSphericalAxis(const std::string& name, double r, const Ogre::Vector3& pos) {
+    double arrow_r = r / 15;
+    double arrow_len = r / 7;
+    double arrow_back = r - arrow_len;
+    Ogre::ManualObject* manual = ourscene->manager()->createManualObject(name+"Obj");
+    manual->estimateVertexCount(6);
+    manual->estimateIndexCount(6);
+    // lines
+    manual->begin("", Ogre::RenderOperation::OT_LINE_LIST);
+    // Z axis (forward)
+    manual->position(0.0, 0.0, r);
+    manual->colour(Ogre::ColourValue::Blue);
+    manual->position(0.0, 0.0, -r);
+    manual->colour(Ogre::ColourValue::Blue);
+    // Y axis (up/down)
+    manual->position(0.0, r, 0.0);
+    manual->colour(Ogre::ColourValue::Red);
+    manual->position(0.0, -r, 0.0);
+    manual->colour(Ogre::ColourValue::Red);
+    // X axis (sideways)
+    manual->position(r, 0.0, 0.0);
+    manual->colour(Ogre::ColourValue::Green);
+    manual->position(-r, 0.0, 0.0);
+    manual->colour(Ogre::ColourValue::Green);
+    // define usage of vertices by refering to the indexes
+    manual->index(0);
+    manual->index(1);
+    manual->index(2);
+    manual->index(3);
+    manual->index(4);
+    manual->index(5);
+    manual->end();
+    // Z arrow
+    manual->begin("", Ogre::RenderOperation::OT_TRIANGLE_STRIP);
+    manual->position(0.0, 0.0, r);
+    manual->colour(Ogre::ColourValue::Blue);
+    manual->position(arrow_r, 0.0, arrow_back);
+    manual->position(0.0, arrow_r, arrow_back);
+    manual->position(-arrow_r, 0.0, arrow_back);
+    manual->position(0.0, -arrow_r, arrow_back);
+    // indexes
+    manual->index(0);
+    manual->index(1);
+    manual->index(2);
+    manual->index(3);
+    manual->index(0);
+    manual->index(4);
+    manual->index(1);
+    manual->index(3);
+    manual->end();
+    // Y arrow
+    manual->begin("", Ogre::RenderOperation::OT_TRIANGLE_STRIP);
+    manual->position(0.0, r, 0.0);
+    manual->colour(Ogre::ColourValue::Red);
+    manual->position(arrow_r, arrow_back, 0.0);
+    manual->position(0.0, arrow_back, arrow_r);
+    manual->position(-arrow_r, arrow_back, 0.0);
+    manual->position(0.0, arrow_back, -arrow_r);
+    // indexes
+    manual->index(0);
+    manual->index(1);
+    manual->index(2);
+    manual->index(3);
+    manual->index(0);
+    manual->index(4);
+    manual->index(1);
+    manual->index(3);
+    manual->end();
+    // X arrow
+    manual->begin("", Ogre::RenderOperation::OT_TRIANGLE_STRIP);
+    manual->position(r, 0.0, 0.0);
+    manual->colour(Ogre::ColourValue::Green);
+    manual->position(arrow_back, arrow_r, 0.0);
+    manual->position(arrow_back, 0.0, arrow_r);
+    manual->position(arrow_back, -arrow_r, 0.0);
+    manual->position(arrow_back, 0.0, -arrow_r);
+    // indexes
+    manual->index(0);
+    manual->index(1);
+    manual->index(2);
+    manual->index(3);
+    manual->index(0);
+    manual->index(4);
+    manual->index(1);
+    manual->index(3);
+    manual->end();
+    manual->convertToMesh(name+"Mesh");
 
-#include <Eigen/Core>
-#include <Eigen/SVD>
-class Matrix : public Eigen::MatrixXd {
-public:
-    Matrix(int rows, int cols) : Eigen::MatrixXd(rows, cols) {}
-
-    Eigen::MatrixXd pseudoInverse(double epsilon = std::numeric_limits<double>::epsilon())
-    {
-        Eigen::JacobiSVD<Eigen::MatrixXd> svd(*this, Eigen::ComputeThinU | Eigen::ComputeThinV);
-        double tolerance = epsilon * std::max(cols(), rows()) *svd.singularValues().array().abs()(0);
-        return svd.matrixV() *  (svd.singularValues().array().abs() > tolerance).select(svd.singularValues().array().inverse(), 0).matrix().asDiagonal() * svd.matrixU().adjoint();
-    }
-};
-void testeMLCP() {
-    int N = 4;
-    btVector3 dir = btVector3(0.0, 0.0, 1.0);
-    btVector3 p1 = btVector3(0.0, 0.0, 1.0);
-    btVector3 p2 = btVector3(0.0, 0.0, -1.0);
-    btVector3 p3 = btVector3(0.0, 1.0, 1.0);
-    btVector3 p4 = btVector3(0.0, -1.0, 1.0);
-    btVector3 p[] = { p1, p2, p3, p4 };
-    for (auto& pf : p) {
-        if (pf.length() <= 0.0) continue;
-        pf.normalize();
-    }
-
-    Matrix M = Matrix(3, N);
-    for (int i = 0; i < N; i++) {
-        M.col(i) = Eigen::Vector3d(p[i].x(), p[i].y(), p[i].z());
-    }
-    cout << "M is:\n" << M << endl;
-
-    Eigen::MatrixXd out = M.pseudoInverse();
-    cout << "Inverse is:\n" << out << endl;
-
-    Eigen::Vector3d eigenDir(dir.x(), dir.y(), dir.z());
-    cout << "EigenDir:\n" << eigenDir << endl;
-    Eigen::VectorXd result = out * eigenDir;
-    cout << "Result:\n" << result << endl;
-
-    cout << "ops" << endl;
+    auto element = ourscene->AddElement(name);
+    ugdk::action::mode3d::component::View* view = new ugdk::action::mode3d::component::View();
+    element->AddComponent(std::shared_ptr<ugdk::action::mode3d::component::View>(view));
+    auto ent = view->AddEntity(name+"Mesh");
+    element->node().setPosition(pos);
+    return element;
 }
 
 void CreateHUD(Ship& pla, Ship& enemy) {
@@ -275,8 +329,6 @@ void AddSubHull(Ship& ship, const std::string& name, double radius, double x, do
 }
 
 int main(int argc, char* argv[]) {
-    testeMLCP();
-
     ugdk::system::Configuration config;
     config.base_path = "assets/";
     config.windows_list.front().title = "Ships Battle";
@@ -302,22 +354,19 @@ int main(int argc, char* argv[]) {
     ourscene->camera()->SetParameters(Ogre::Vector3::ZERO, 100);
     ourscene->camera()->SetDistance(10);
 
-    //AerOmar bounding box size: (3.07287, 1.06726, 6.79639) - bounding sphere radius: 3.88078
-    AddSubHull(player, "BallOrigin", 0.5, 0, 0, 0);
-    //AddSubHull(player, "BallUno", 1.0, 0, 0, 1.0);
-    //AddSubHull(player, "BallBottom", 0.1, 0, 0, 0.25);
-    AddSubHull(player, "BallFront", 0.2, 0, 0, 3.7);
+    auto sa = createSphericalAxis("SphereAxis", 0.4, Ogre::Vector3(0.0, 0.0, 0.0));
+    auto& saNode = sa.lock()->node();
 
     // create Enemy ship
     Ship enemy = createShip("Enemy");
     enemy.body()->Translate(0, 0, 80);
-    AddSubHull(enemy, "Butt", 0.2, 0.0, 0.0, -3.6);
     player->component<Navigation>()->ToggleTarget("Enemy", true);
     //enemy->AddComponent(std::make_shared<shipsbattle::components::TimedLife>(15.0));
 
     CreateHUD(player, enemy);
     ourscene->event_handler().AddListener<ugdk::input::KeyPressedEvent>(
-        [&player,&enemy](const ugdk::input::KeyPressedEvent& ev) -> void {
+        [&player,&enemy,&saNode](const ugdk::input::KeyPressedEvent& ev) -> void {
+        Ogre::Real v = 0.05;
         if (ev.scancode == ugdk::input::Scancode::I) {
             player.hull()->TakeDamage(-100, 0.2, 5.0, btVector3(0, 0, 3.9), CONSTANT);
         }
@@ -329,6 +378,35 @@ int main(int argc, char* argv[]) {
         }
         else if (ev.scancode == ugdk::input::Scancode::SPACE) {
             enemy.hull()->TakeDamage(-500.0, 0.0, 1.0, btVector3(0, 0, 0), CONSTANT);
+        }
+        else if (ev.scancode == ugdk::input::Scancode::M) {
+            enemy.view()->SetPolygonModeForAllEntities(Ogre::PolygonMode::PM_SOLID);
+        }
+        else if (ev.scancode == ugdk::input::Scancode::N) {
+            enemy.view()->SetPolygonModeForAllEntities(Ogre::PolygonMode::PM_WIREFRAME);
+        }
+
+        else if (ev.scancode == ugdk::input::Scancode::NUMPAD_0) {
+            auto pos = saNode.getPosition();
+            cout << "Position: " << pos.x << ", " << pos.y << ", " << pos.z << endl;
+        }
+        else if (ev.scancode == ugdk::input::Scancode::NUMPAD_8) { //frente
+            saNode.translate(Ogre::Vector3(0.0,0.0,v));
+        }
+        else if (ev.scancode == ugdk::input::Scancode::NUMPAD_2) { //tras
+            saNode.translate(Ogre::Vector3(0.0, 0.0, -v));
+        }
+        else if (ev.scancode == ugdk::input::Scancode::NUMPAD_4) { //esquerda
+            saNode.translate(Ogre::Vector3(v, 0.0, 0.0));
+        }
+        else if (ev.scancode == ugdk::input::Scancode::NUMPAD_6) { //direita
+            saNode.translate(Ogre::Vector3(-v, 0.0, 0.0));
+        }
+        else if (ev.scancode == ugdk::input::Scancode::NUMPAD_7) { //baixo
+            saNode.translate(Ogre::Vector3(0.0, -v, 0.0));
+        }
+        else if (ev.scancode == ugdk::input::Scancode::NUMPAD_9) { //cima
+            saNode.translate(Ogre::Vector3(0.0, v, 0.0));
         }
     });
 
