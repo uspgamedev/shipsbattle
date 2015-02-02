@@ -129,7 +129,7 @@ void PlayerController::Update(double dt) {
     rotate *= 30;
     //cout << "Rotation: (" << rotate.x << ", " << rotate.y << ", " << rotate.z << ")" << endl;
     
-    body->Rotate(rotate.x, rotate.y, rotate.z);
+    body->Rotate(rotate);
     body->ApplyImpulse(body->orientation() * Ogre::Vector3::UNIT_Z * static_cast<Ogre::Real>(speed_) * 50);
 }
 

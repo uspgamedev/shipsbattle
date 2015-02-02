@@ -11,6 +11,9 @@
 #include <shipsbattle/objects/projectilemodel.h>
 #include <shipsbattle/components/navigation.h>
 #include <shipsbattle/components/subsystems/sensorarray.h>
+#include <shipsbattle/components/motion.h>
+#include <shipsbattle/components/subsystems/impulseengine.h>
+#include <shipsbattle/components/subsystems/thruster.h>
 
 #include <ugdk/action/3D/component/physicsbody.h>
 #include <ugdk/action/3D/component/view.h>
@@ -24,6 +27,7 @@
 using std::string;
 using std::cout;
 using std::endl;
+using Ogre::Vector3;
 using ugdk::action::mode3d::Scene3D;
 using ugdk::action::mode3d::component::Body;
 using ugdk::action::mode3d::component::PhysicsBody;
@@ -41,6 +45,9 @@ using shipsbattle::components::subsystems::ProjectileWeapon;
 using shipsbattle::objects::ProjectileModel;
 using shipsbattle::components::Navigation;
 using shipsbattle::components::subsystems::SensorArray;
+using shipsbattle::components::Motion;
+using shipsbattle::components::subsystems::ImpulseEngine;
+using shipsbattle::components::subsystems::Thruster;
 
 namespace shipsbattle {
 namespace objects {
@@ -105,16 +112,16 @@ Ship::Ship(Scene3D& scene, const string& name, const string& meshName) {
     ship->AddComponent(std::make_shared<PowerSystem>());
     auto power = this->power();
     PowerGenerator* pgen = new PowerGenerator("Power Plant");
-    pgen->SetVolume(0.8, btVector3(0.0, 0.0, -1.0));
+    pgen->SetVolume(0.4, btVector3(0.0, -0.05, -0.75));
     power->AddPowerGenerator(std::shared_ptr<PowerGenerator>(pgen));
     Battery* bat = new Battery("Energy Cells");
-    bat->SetVolume(0.5, btVector3(0.0, 0.1, 0.7));
+    bat->SetVolume(0.2, btVector3(0.0, -0.05, -0.2));
     power->AddBattery(std::shared_ptr<Battery>(bat));
 
     // Tactical
     ship->AddComponent(std::make_shared<Tactical>());
     auto tact = this->tactical();
-    ProjectileWeapon* gun = new ProjectileWeapon("Cannon");
+    ProjectileWeapon* gun = new ProjectileWeapon("Forward Cannon");
     ProjectileModel ammunition ("HEAmmo");
     ammunition.set_mesh_name("Ammo");
     ammunition.set_linear_speed(50.0);
@@ -122,15 +129,44 @@ Ship::Ship(Scene3D& scene, const string& name, const string& meshName) {
     gun->set_projectile(ammunition);
     gun->set_direction(Ogre::Vector3::UNIT_Z);
     gun->set_launching_speed(10.0);
-    gun->SetVolume(0.1, btVector3(0.0, 0.0, 3.6));
+    gun->SetVolume(0.075, btVector3(0.0, -0.2, 2.8));
     tact->AddWeapon(std::shared_ptr<ProjectileWeapon>(gun));
 
     // Navigation
     ship->AddComponent(std::make_shared<Navigation>());
     auto nav = this->navigation();
     SensorArray* sensor = new SensorArray("Sensor Array");
-    sensor->SetVolume(0.2, btVector3(0.0, 0.5, 0.0));
+    sensor->SetVolume(0.2, btVector3(0.0, 0.4, 0.25));
     nav->AddSensorArray(std::shared_ptr<SensorArray>(sensor));
+
+    // Motion
+    ship->AddComponent(std::make_shared<Motion>());
+    auto motion = this->motion();
+    // port = esquerda / starboard = direita
+    const int num_engs = 3;
+    const btVector3 eng_poses[num_engs] = { { 0.95, -0.3, -0.7 }, { -0.95, -0.3, -0.7 }, { 0.0, -0.175, -3.15 } };
+    const string eng_names[num_engs] = { "Port Engine", "Starboard Engine", "Aft Engine" };
+    for (int i = 0; i < num_engs; i++) {
+        ImpulseEngine* engine = new ImpulseEngine(eng_names[i]);
+        engine->SetVolume(0.4, eng_poses[i]);
+        engine->set_exhaust_angle(Ogre::Degree(120.0).valueRadians());
+        engine->set_exhaust_power(100.0);
+        motion->AddImpulseEngine(std::shared_ptr<ImpulseEngine>(engine));
+    }
+    const int num_ts = 12;
+    const btVector3 t_poses[num_ts] = { { 0.45, 0.0, 1.75 }, { -0.45, 0.0, 1.75 }, { 0.0, 0.4, 1.75 }, { 0.0, -0.3, 1.75 }, { 0.75, -0.05, 0.0 },
+    { 0.75, -0.05, 0.0 }, { -0.75, -0.05, 0.0 }, { -0.75, -0.05, 0.0 }, { 0.2, -0.15, -2.45 }, { -0.2, -0.15, -2.45 }, { 0.0, -0.05, -2.45 }, { 0.0, -0.3, -2.45 } };
+    const Vector3 t_dirs[num_ts] = { Vector3::UNIT_X, Vector3::NEGATIVE_UNIT_X, Vector3::UNIT_Y, Vector3::NEGATIVE_UNIT_Y, Vector3::UNIT_Y, Vector3::NEGATIVE_UNIT_Y,
+        Vector3::UNIT_Y, Vector3::NEGATIVE_UNIT_Y, Vector3::UNIT_X, Vector3::NEGATIVE_UNIT_X, Vector3::UNIT_Y, Vector3::NEGATIVE_UNIT_Y };
+    const string t_names[num_ts] = { "FrontPort Thruster", "FrontStarboard Thruster", "FrontDorsal Thruster", "FrontVentral Thruster", "MidPortDorsal Thruster", "MidPortVentral Thruster", 
+        "MidStarboardDorsal Thruster", "MidStarboardVentral Thruster", "AftPort Thruster", "AftStarboard Thruster", "AftDorsal Thruster", "AftVentral Thruster" };
+    for (int i = 0; i < num_ts; i++) {
+        Thruster* tr = new Thruster(t_names[i]);
+        tr->SetVolume(0.05, t_poses[i]);
+        tr->set_thrust_power(Ogre::Degree(45.0).valueRadians());
+        tr->set_thrust_direction(t_dirs[i]);
+        motion->AddThruster(std::shared_ptr<Thruster>(tr));
+    }
 }
 Ship::Ship(const std::shared_ptr<ugdk::action::mode3d::Element>& ship) : ship_(ship) {
     //FIXME: make sure the element is a ship element.
@@ -156,6 +192,9 @@ Tactical* Ship::tactical() {
 }
 Navigation* Ship::navigation() {
     return ship_.lock()->component<Navigation>();
+}
+Motion* Ship::motion() {
+    return ship_.lock()->component<Motion>();
 }
 
 } // namespace objects
