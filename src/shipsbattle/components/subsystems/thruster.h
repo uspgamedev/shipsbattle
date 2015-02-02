@@ -22,7 +22,7 @@ public:
     Ogre::Vector3 thrust_direction() const { return thrust_direction_; }
     void set_thrust_direction(const Ogre::Vector3& dir) { thrust_direction_ = dir.normalisedCopy(); }
     /** Amount of thrust this Thruster can output per second at regular power levels and efficiency.
-     Unit is WAT WAT WAT */
+     Unit is (inertiaTensor)*rads/s^2 */
     double thrust_power() const { return thrust_power_; }
     void set_thrust_power(double power) { thrust_power_ = power; }
 
@@ -32,9 +32,7 @@ public:
     Ogre::Vector3 rotational_axis();
 
 protected:
-    // thrust directions
     Ogre::Vector3 thrust_direction_;
-    // thrust power/force
     double thrust_power_;
 
     double spent_energy_;

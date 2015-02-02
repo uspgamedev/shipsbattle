@@ -12,7 +12,7 @@ namespace components {
 namespace subsystems {
 
 Thruster::Thruster(const std::string& name)
-: PoweredSystem(name)
+: PoweredSystem(name), thrust_direction_(Ogre::Vector3::ZERO), thrust_power_(10.0), spent_energy_(0.0)
 {
 }
 
