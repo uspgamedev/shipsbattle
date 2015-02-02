@@ -34,7 +34,8 @@ void Motion::MotionData::Reset(const Ogre::Vector3& dir, double p, double dur, M
     factors = Eigen::VectorXd();
 }
 
-Motion::Motion() : move_stop_threshold_(0.001), angle_threshold_(0.01), last_active_engines_(0) {
+Motion::Motion() : move_stop_threshold_(0.001), angle_threshold_(0.01), last_active_engines_(-1),
+last_active_thrusters_(-1), generated_torque_(Ogre::Vector3::ZERO) {
 }
 
 void Motion::AddImpulseEngine(const shared_ptr<ImpulseEngine>& engine) {
@@ -239,7 +240,7 @@ bool Motion::ResolveMotionSystem(MotionData& data, const Ogre::Vector3& target, 
 
     if ((target.angleBetween(data.direction).valueRadians() > angle_threshold_) || (last_active != values.size())) {
         last_active = values.size();
-        if (values.size() <= 0) return;
+        if (values.size() <= 0) return false;
 
         //get list of active engines, calculate engine factors and store maximal outputs.
         Matrix dirs = Matrix(3, values.size());
@@ -266,12 +267,13 @@ bool Motion::ResolveMotionSystem(MotionData& data, const Ogre::Vector3& target, 
         data.factors = dirs.pseudoInverse() * Eigen::Vector3d(target.x, target.y, target.z);
 
         // normalize factors and remove negative coefficients
-        if (data.factors.maxCoeff() <= 0.0)    return;
+        if (data.factors.maxCoeff() <= 0.0)    return false;
         data.factors /= (1.0 / data.factors.maxCoeff());
         for (int i = 0; i < values.size(); i++) {
             if (data.factors(i) < 0.0)   data.factors(i) = 0.0;
         }
     }
+    if (values.size() <= 0) return false;
 
     // calculate actual engine outputs.
     //   doing this here prevents us from having to add extra logic to handle other cases in which 
@@ -281,6 +283,7 @@ bool Motion::ResolveMotionSystem(MotionData& data, const Ogre::Vector3& target, 
         data.outputs(i) = values[i].output;
     }
     CalculateOutputValues(data.outputs, data.factors);
+    return true;
 }
 
 void Motion::CalculateOutputValues(Eigen::VectorXd& outputs, const Eigen::VectorXd& factors) {
