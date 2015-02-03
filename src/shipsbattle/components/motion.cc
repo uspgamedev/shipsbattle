@@ -5,7 +5,14 @@
 
 #include <ugdk/action/3D/component/body.h>
 #include <ugdk/action/3D/element.h>
+#include <ugdk/action/3D/scene3d.h>
 #include <ugdk/debug/log.h>
+
+#include <BtOgreExtras.h>
+#include <OgreSceneManager.h>
+#include <OgreSceneNode.h>
+#include <OgreParticleSystem.h>
+#include <OgreParticleEmitter.h>
 
 using std::shared_ptr;
 using ugdk::debug::Log;
@@ -35,7 +42,12 @@ void Motion::MotionData::Reset(const Ogre::Vector3& dir, double p, double dur, M
 }
 
 Motion::Motion() : move_stop_threshold_(0.001), angle_threshold_(0.01), last_active_engines_(-1),
-last_active_thrusters_(-1), generated_torque_(Ogre::Vector3::ZERO) {
+last_active_thrusters_(-1), generated_torque_(Ogre::Vector3::ZERO), jet_system_(nullptr), smoke_system_(nullptr) {
+}
+
+Motion::~Motion() {
+    owner()->scene().manager()->destroyParticleSystem(jet_system_);
+    owner()->scene().manager()->destroyParticleSystem(smoke_system_);
 }
 
 void Motion::AddImpulseEngine(const shared_ptr<ImpulseEngine>& engine) {
@@ -46,6 +58,7 @@ void Motion::AddImpulseEngine(const shared_ptr<ImpulseEngine>& engine) {
     impulse_engines_.push_back(engine);
     impulse_indexes_[engine->name()] = impulse_engines_.size() - 1;
     engine->RegisteredTo(this);
+    AddEmitter(BtOgre::Convert::toOgre(engine->position()), engine->exhaust_direction(), engine->radius(), jet_system_, jet_emitters_);
 }
 const shared_ptr<ImpulseEngine>& Motion::GetImpulseEngine(size_t index) {
     return impulse_engines_.at(index);
@@ -62,6 +75,7 @@ void Motion::AddThruster(const shared_ptr<Thruster>& thruster) {
     thrusters_.push_back(thruster);
     thruster_indexes_[thruster->name()] = thrusters_.size() - 1;
     thruster->RegisteredTo(this);
+    AddEmitter(BtOgre::Convert::toOgre(thruster->position()), thruster->thrust_direction(), thruster->radius(), smoke_system_, smoke_emitters_);
 }
 const shared_ptr<Thruster>& Motion::GetThruster(size_t index) {
     return thrusters_.at(index);
@@ -196,12 +210,20 @@ void Motion::AllStop() {
 void Motion::DoMove(const Ogre::Vector3& dir, double power, double dt) {
     std::vector<std::shared_ptr<subsystems::ImpulseEngine>> active_engines;
     std::vector<MotionSystemPair> values;
-    for (auto engine : impulse_engines_) {
-        if (!engine->activated() || engine->disabled()) continue;
+    for (int i = 0; i < impulse_engines_.size(); i++) {
+        auto engine = impulse_engines_[i];
+        auto emitter = jet_emitters_[i];
+        if (!engine->activated() || engine->disabled()) {
+            emitter->setEnabled(false);
+            continue;
+        }
         active_engines.push_back(engine);
         auto eng_dir = engine->GetVectorClosestTo(dir);
         values.push_back(MotionSystemPair(eng_dir, engine->current_exhaust_power()));
         engine->set_current_direction(eng_dir);
+        emitter->setEnabled(true);
+        emitter->setDirection(eng_dir);
+        //TODO: update 'intensity' of emitter
     }
     
     if (!ResolveMotionSystem(move_, dir, values, last_active_engines_)) 
@@ -217,11 +239,18 @@ void Motion::DoMove(const Ogre::Vector3& dir, double power, double dt) {
 void Motion::DoTurn(const Ogre::Vector3& axis, double power, double dt) {
     std::vector<std::shared_ptr<subsystems::Thruster>> active_thrusters;
     std::vector<MotionSystemPair> values;
-    for (auto thruster : thrusters_) {
-        if (!thruster->activated() || thruster->disabled()) continue;
+    for (int i = 0; i < thrusters_.size(); i++) {
+        auto thruster = thrusters_[i];
+        auto emitter = smoke_emitters_[i];
+        if (!thruster->activated() || thruster->disabled()) {
+            emitter->setEnabled(false);
+            continue;
+        }
         active_thrusters.push_back(thruster);
         auto ang_dir = thruster->rotational_axis();
         values.push_back(MotionSystemPair(ang_dir, thruster->current_thrust_power()));
+        emitter->setEnabled(true);
+        //TODO: update 'intensity' of emitter
     }
 
     if (!ResolveMotionSystem(turn_, axis, values, last_active_thrusters_))
@@ -313,6 +342,46 @@ void Motion::CalculateOutputValues(Eigen::VectorXd& outputs, const Eigen::Vector
     for (int j = 0; j < outputs.size(); j++) {
         outputs(j) = Pi * factors(j) / factors(i);
     }
+}
+
+void Motion::OnTaken() {
+    UpdateableComponent::OnTaken();
+
+    // create particle systems
+    auto parent = owner();
+    auto sceneMgr = parent->scene().manager();
+    jet_system_ = sceneMgr->createParticleSystem(parent->name() + "EngineJet", "SpaceEffects/JetEngine");
+    smoke_system_ = sceneMgr->createParticleSystem(parent->name() + "ThrusterSmoke", "SpaceEffects/Smoke");
+    parent->node().attachObject(jet_system_);
+    parent->node().attachObject(smoke_system_);
+
+    // add subsystems to corresponding particle systems.
+    //TODO: will need to refactor this since we need to do this here for any existing subsystems,
+    //      and at the AddSystem methods if owner() already exists.
+    for (auto& engine : impulse_engines_) {
+        AddEmitter(BtOgre::Convert::toOgre(engine->position()), engine->exhaust_direction(), engine->radius(), jet_system_, jet_emitters_);
+    }
+    for (auto& thruster : thrusters_) {
+        AddEmitter(BtOgre::Convert::toOgre(thruster->position()), thruster->thrust_direction(), thruster->radius(), smoke_system_, smoke_emitters_);
+    }
+}
+void Motion::AddEmitter(const Ogre::Vector3& pos, const Ogre::Vector3& dir, double radius, Ogre::ParticleSystem* system, std::vector<Ogre::ParticleEmitter*>& emitters) {
+    if (!system) return;
+    Ogre::ParticleEmitter* emitter;
+    if (emitters.empty())
+        emitter = system->getEmitter(0);
+    else {
+        emitter = system->addEmitter("Ring");
+        emitters[0]->copyParametersTo(emitter);
+    }
+    emitter->setPosition(pos);
+    emitter->setDirection(dir);
+    emitter->setParameter("width", std::to_string(radius * 2));
+    emitter->setParameter("height", std::to_string(radius * 2));
+    emitter->setParameter("depth", std::to_string(radius * 2));
+    emitter->setParameter("inner_width", "0");
+    emitter->setParameter("inner_height", "0");
+    emitters.push_back(emitter);
 }
 
 } // namespace components

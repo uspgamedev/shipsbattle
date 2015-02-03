@@ -7,6 +7,11 @@
 #include <vector>
 #include <unordered_map>
 
+namespace Ogre {
+class ParticleSystem;
+class ParticleEmitter;
+}
+
 namespace shipsbattle {
 namespace components {
 namespace subsystems {
@@ -17,6 +22,7 @@ class Thruster;
 class Motion : public UpdateableComponent {
 public:
     Motion();
+    virtual ~Motion();
 
     virtual std::type_index type() const override;
 
@@ -112,6 +118,11 @@ protected:
     int last_active_thrusters_;
     Ogre::Vector3 generated_torque_;
 
+    Ogre::ParticleSystem* jet_system_;
+    std::vector<Ogre::ParticleEmitter*> jet_emitters_;
+    Ogre::ParticleSystem* smoke_system_;
+    std::vector<Ogre::ParticleEmitter*> smoke_emitters_;
+
     void DoMove(const Ogre::Vector3& dir, double power, double dt);
     void DoTurn(const Ogre::Vector3& axis, double power, double dt);
     struct MotionSystemPair {
@@ -123,6 +134,9 @@ protected:
     };
     bool ResolveMotionSystem(MotionData& data, const Ogre::Vector3& target, const std::vector<MotionSystemPair>& values, int& last_active);
     void CalculateOutputValues(Eigen::VectorXd& outputs, const Eigen::VectorXd& factors);
+
+    void OnTaken() override;
+    void AddEmitter(const Ogre::Vector3& pos, const Ogre::Vector3& dir, double radius, Ogre::ParticleSystem* system, std::vector<Ogre::ParticleEmitter*>& emitters);
 };
 
 inline std::type_index Motion::type() const {
