@@ -32,6 +32,10 @@ Ogre::Vector3 ImpulseEngine::GetVectorClosestTo(const Ogre::Vector3& dir) {
 
     auto exhaust_dir = BtOgre::Convert::toBullet(exhaust_direction_);
     auto axis = exhaust_dir.cross(BtOgre::Convert::toBullet(dir));
+    if (axis.length2() <= 0.0) {
+        // dir is outside our range, but is parallel to our direction...
+        axis = BtOgre::Convert::toBullet(exhaust_direction_.perpendicular());
+    }
     axis.normalize();
     auto path = BtOgre::Convert::toOgre(exhaust_dir.rotate(axis, static_cast<btScalar>(exhaust_angle_)));
     path.normalise();
@@ -56,7 +60,7 @@ Ogre::Vector3 ImpulseEngine::GenerateThrust(double power, double dt) {
     auto body = parent()->owner()->component<Body>();
     auto impulse = -current_direction_ * power * dt;
     auto pos = BtOgre::Convert::toOgre(position());
-    body->ApplyImpulse(impulse, pos);
+    body->ApplyImpulse(impulse);// , pos);
     return pos.crossProduct(impulse); //generated torque (check Bullet's apply impulse to check it out)
 }
 

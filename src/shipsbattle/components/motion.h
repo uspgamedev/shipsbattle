@@ -2,8 +2,10 @@
 #define SHIPSBATTLE_COMPONENTS_MOTION_H
 
 #include <shipsbattle/components/updateablecomponent.h>
+
 #include <Eigen/Core>
 #include <OgreVector3.h>
+
 #include <vector>
 #include <unordered_map>
 
@@ -11,6 +13,13 @@ namespace Ogre {
 class ParticleSystem;
 class ParticleEmitter;
 }
+
+namespace ugdk {
+namespace action {
+namespace mode3d {
+namespace component {
+class Body;
+}}}}
 
 namespace shipsbattle {
 namespace components {
@@ -81,12 +90,17 @@ public:
     /** If we are actively using our thrusters to counteract any torque(rotation) inflicted by movement. */
     bool cancel_move_torque() const { cancel_move_torque_; }
     void set_cancel_move_torque(bool cancel) { cancel_move_torque_ = cancel; }
-    /** Speed (magnitude), in GameUnits/s, threshold to assume a velocity vector (linear or angular) is null (zero). */
+    /** Speed (magnitude), in GameUnits/s, threshold to assume a linear velocity vector is null (zero). */
     double move_stop_threshold() const { return move_stop_threshold_; }
     void set_move_stop_threshold(double threshold) { move_stop_threshold_ = threshold; }
+    /** Angular speed (magnitude), in Radians/s, threshold to assume a angular velocity vector is null (zero). */
+    double turn_stop_threshold() const { return turn_stop_threshold_; }
+    void set_turn_stop_threshold(double threshold) { turn_stop_threshold_ = threshold; }
     /** Angle threshold, in radians, to assume 2 direction vectors are the same (pointing the same way). */
     double angle_threshold() const { return angle_threshold_; }
-    void set_angle_threshold(double threshold) { angle_threshold_ = threshold; }
+    void set_angle_threshold(double threshold) { 
+        angle_threshold_ = threshold; turn_.angle_threshold = threshold; move_.angle_threshold = threshold;
+    }
 
 
 protected:
@@ -103,6 +117,8 @@ protected:
         double duration;
         double elapsed;
         MotionStatus status;
+        bool update_system;
+        double angle_threshold;
         Eigen::VectorXd factors;
         Eigen::VectorXd outputs;
 
@@ -113,9 +129,10 @@ protected:
     MotionData turn_;
     bool cancel_move_torque_;
     double move_stop_threshold_; //GU/s threshold to force 0 linear velocity.
+    double turn_stop_threshold_; //radians/s threshold to force 0 angular velocity.
     double angle_threshold_; //angle (radians) threshold to assume 2 vectors are pointing the same way.
-    int last_active_engines_; // number of engines that were active
-    int last_active_thrusters_;
+    size_t last_active_engines_; // number of engines that were active
+    size_t last_active_thrusters_;
     Ogre::Vector3 generated_torque_;
 
     Ogre::ParticleSystem* jet_system_;
@@ -123,8 +140,14 @@ protected:
     Ogre::ParticleSystem* smoke_system_;
     std::vector<Ogre::ParticleEmitter*> smoke_emitters_;
 
+    ugdk::action::mode3d::component::Body* parent_body_;
+
+    /** dir is the target IMPULSE direction, therefore it is -(target movement direction) */
     void DoMove(const Ogre::Vector3& dir, double power, double dt);
+    /** axis is the target THRUST direction, therefore it is -(target rotation axis) */
     void DoTurn(const Ogre::Vector3& axis, double power, double dt);
+    void ForceMoveStop();
+    void ForceTurnStop();
     struct MotionSystemPair {
         Ogre::Vector3 vector;
         double output;
@@ -132,7 +155,7 @@ protected:
         MotionSystemPair() {}
         MotionSystemPair(const Ogre::Vector3& v, double out) : vector(v), output(out) {}
     };
-    bool ResolveMotionSystem(MotionData& data, const Ogre::Vector3& target, const std::vector<MotionSystemPair>& values, int& last_active);
+    bool ResolveMotionSystem(MotionData& data, const Ogre::Vector3& target, const std::vector<MotionSystemPair>& values, size_t& last_active);
     void CalculateOutputValues(Eigen::VectorXd& outputs, const Eigen::VectorXd& factors);
 
     void OnTaken() override;

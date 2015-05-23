@@ -69,7 +69,7 @@ Ship::Ship(Scene3D& scene, const string& name, const string& meshName) {
     data.collides_with = ObjectTypes::SHIP | ObjectTypes::PROJECTILE;
     PhysicsBody* pbody = new PhysicsBody(*scene.physics(), data);
     ship->AddComponent(std::shared_ptr<PhysicsBody>(pbody));
-    pbody->set_damping(.5, .5);
+    //pbody->set_damping(.5, .5);
     pbody->set_restitution(0.3);
     //TODO: maybe its good to set ContinuousCollisionDetection for ships
 
@@ -129,7 +129,7 @@ Ship::Ship(Scene3D& scene, const string& name, const string& meshName) {
     gun->set_projectile(ammunition);
     gun->set_direction(Ogre::Vector3::UNIT_Z);
     gun->set_launching_speed(10.0);
-    gun->SetVolume(0.075, btVector3(0.0, -0.2, 2.8));
+    gun->SetVolume(0.075, btVector3(0.0, -0.2, 3.6)); // z = 2.8
     tact->AddWeapon(std::shared_ptr<ProjectileWeapon>(gun));
 
     // Navigation
@@ -144,7 +144,7 @@ Ship::Ship(Scene3D& scene, const string& name, const string& meshName) {
     auto motion = this->motion();
     // port = esquerda / starboard = direita
     const int num_engs = 3;
-    const btVector3 eng_poses[num_engs] = { { 0.95, -0.3, -0.7 }, { -0.95, -0.3, -0.7 }, { 0.0, -0.175, -3.15 } };
+    const btVector3 eng_poses[num_engs] = { btVector3(0.95, -0.3, -0.7), btVector3(-0.95, -0.3, -0.7), btVector3(0.0, -0.175, -3.15) };
     const string eng_names[num_engs] = { "Port Engine", "Starboard Engine", "Aft Engine" };
     for (int i = 0; i < num_engs; i++) {
         ImpulseEngine* engine = new ImpulseEngine(eng_names[i]);
@@ -154,8 +154,9 @@ Ship::Ship(Scene3D& scene, const string& name, const string& meshName) {
         motion->AddImpulseEngine(std::shared_ptr<ImpulseEngine>(engine));
     }
     const int num_ts = 12;
-    const btVector3 t_poses[num_ts] = { { 0.45, 0.0, 1.75 }, { -0.45, 0.0, 1.75 }, { 0.0, 0.4, 1.75 }, { 0.0, -0.3, 1.75 }, { 0.75, -0.05, 0.0 },
-    { 0.75, -0.05, 0.0 }, { -0.75, -0.05, 0.0 }, { -0.75, -0.05, 0.0 }, { 0.2, -0.15, -2.45 }, { -0.2, -0.15, -2.45 }, { 0.0, -0.05, -2.45 }, { 0.0, -0.3, -2.45 } };
+    const btVector3 t_poses[num_ts] = { btVector3(0.45, 0.0, 1.75), btVector3(-0.45, 0.0, 1.75), btVector3(0.0, 0.4, 1.75), btVector3(0.0, -0.3, 1.75), btVector3(0.75, -0.05, 0.0),
+        btVector3(0.75, -0.05, 0.0), btVector3(-0.75, -0.05, 0.0), btVector3(-0.75, -0.05, 0.0), btVector3(0.2, -0.15, -2.45), btVector3(-0.2, -0.15, -2.45),
+        btVector3(0.0, -0.05, -2.45), btVector3(0.0, -0.3, -2.45) };
     const Vector3 t_dirs[num_ts] = { Vector3::UNIT_X, Vector3::NEGATIVE_UNIT_X, Vector3::UNIT_Y, Vector3::NEGATIVE_UNIT_Y, Vector3::UNIT_Y, Vector3::NEGATIVE_UNIT_Y,
         Vector3::UNIT_Y, Vector3::NEGATIVE_UNIT_Y, Vector3::UNIT_X, Vector3::NEGATIVE_UNIT_X, Vector3::UNIT_Y, Vector3::NEGATIVE_UNIT_Y };
     const string t_names[num_ts] = { "FrontPort Thruster", "FrontStarboard Thruster", "FrontDorsal Thruster", "FrontVentral Thruster", "MidPortDorsal Thruster", "MidPortVentral Thruster", 
@@ -163,7 +164,7 @@ Ship::Ship(Scene3D& scene, const string& name, const string& meshName) {
     for (int i = 0; i < num_ts; i++) {
         Thruster* tr = new Thruster(t_names[i]);
         tr->SetVolume(0.05, t_poses[i]);
-        tr->set_thrust_power(Ogre::Degree(45.0).valueRadians());
+        tr->set_thrust_power(Ogre::Degree(720.0).valueRadians());
         tr->set_thrust_direction(t_dirs[i]);
         motion->AddThruster(std::shared_ptr<Thruster>(tr));
     }

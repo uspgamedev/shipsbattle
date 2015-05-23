@@ -1,6 +1,8 @@
 #include <shipsbattle/components/playercontroller.h>
 #include <shipsbattle/components/tactical.h>
 #include <shipsbattle/components/navigation.h>
+#include <shipsbattle/components/motion.h>
+#include <shipsbattle/objects/targets.h>
 #include <shipsbattle/components/subsystems/damageablesystem.h>
 
 #include <ugdk/input/module.h>
@@ -9,7 +11,6 @@
 #include <ugdk/action/3D/scene3d.h>
 #include <ugdk/action/3D/physics.h>
 #include <ugdk/action/3D/camera.h>
-#include <ugdk/action/3D/component/body.h>
 
 #include <OgreSceneNode.h>
 
@@ -17,6 +18,7 @@
 
 using std::cout;
 using std::endl;
+using ugdk::input::Scancode;
 using shipsbattle::components::Tactical;
 
 namespace shipsbattle {
@@ -35,16 +37,16 @@ void PlayerController::Handle(const ugdk::input::MouseMotionEvent& ev) {
 }
 void PlayerController::Handle(const ugdk::input::KeyPressedEvent& ev) {
     auto& scene = owner()->scene();
-    if (ev.scancode == ugdk::input::Scancode::ESCAPE)
+    if (ev.scancode == Scancode::ESCAPE)
         scene.Finish();
-    else if (ev.scancode == ugdk::input::Scancode::NUMPAD_1)
+    else if (ev.scancode == Scancode::NUMPAD_1)
         scene.physics()->set_debug_draw_enabled(!scene.physics()->debug_draw_enabled());
-    else if (ev.scancode == ugdk::input::Scancode::E) {
+    else if (ev.scancode == Scancode::R) {
         speed_ += 0.1;
         if (speed_ > 1.0) speed_ = 1.0;
         cout << "Speed is " << speed_ << endl;
     }
-    else if (ev.scancode == ugdk::input::Scancode::Q) {
+    else if (ev.scancode == Scancode::F) {
         speed_ -= 0.1;
         if (speed_ < -1.0) speed_ = -1.0;
         cout << "Speed is " << speed_ << endl;
@@ -110,27 +112,23 @@ void PlayerController::Handle(const ugdk::input::JoystickDisconnectedEvent& ev) 
 
 
 void PlayerController::Update(double dt) {
-    auto& keyboard = ugdk::input::manager()->keyboard();
-    auto body = owner()->component<ugdk::action::mode3d::component::Body>();
-
-    Ogre::Vector3 rotate = Ogre::Vector3::ZERO;
-    if (keyboard.IsDown(ugdk::input::Scancode::D))
-        rotate.y += -1.0;
-    else if (keyboard.IsDown(ugdk::input::Scancode::A))
-        rotate.y += 1.0;
-    if (keyboard.IsDown(ugdk::input::Scancode::W))
-        rotate.x += -1.0;
-    else if (keyboard.IsDown(ugdk::input::Scancode::S))
-        rotate.x += 1.0;
-
-    rotate.normalise();
-    rotate = body->orientation() * rotate;
-    rotate.normalise();
-    rotate *= 30;
-    //cout << "Rotation: (" << rotate.x << ", " << rotate.y << ", " << rotate.z << ")" << endl;
+    auto& keys = ugdk::input::manager()->keyboard();
     
-    body->Rotate(rotate);
-    body->ApplyImpulse(body->orientation() * Ogre::Vector3::UNIT_Z * static_cast<Ogre::Real>(speed_) * 50);
+    Ogre::Vector3 rotateAxis = Ogre::Vector3::ZERO;
+    rotateAxis.x += (keys.IsDown(Scancode::S)) ? 1.0 : ((keys.IsDown(Scancode::W)) ? -1.0 : 0.0);
+    rotateAxis.y += (keys.IsDown(Scancode::A)) ? 1.0 : ((keys.IsDown(Scancode::D)) ? -1.0 : 0.0);
+    rotateAxis.z += (keys.IsDown(Scancode::E)) ? 1.0 : ((keys.IsDown(Scancode::Q)) ? -1.0 : 0.0);
+    rotateAxis.normalise();
+
+    Ogre::Vector3 moveToDir = Ogre::Vector3::ZERO;
+    moveToDir.x += (keys.IsDown(Scancode::G)) ? 1.0 : ((keys.IsDown(Scancode::J)) ? -1.0 : 0.0);
+    moveToDir.y += (keys.IsDown(Scancode::U)) ? 1.0 : ((keys.IsDown(Scancode::T)) ? -1.0 : 0.0);
+    moveToDir.z += (keys.IsDown(Scancode::Y)) ? 1.0 : ((keys.IsDown(Scancode::H)) ? -1.0 : 0.0);
+    moveToDir.normalise();
+
+    auto motion = owner()->component<shipsbattle::components::Motion>();
+    motion->TurnAround(rotateAxis, speed_, 0.1);
+    motion->MoveTowards(moveToDir, speed_, 0.1);
 }
 
 void PlayerController::OnTaken() {

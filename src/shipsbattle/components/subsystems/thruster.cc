@@ -28,7 +28,7 @@ double Thruster::current_thrust_power() const {
 }
 
 Ogre::Vector3 Thruster::rotational_axis() {
-    auto axis = BtOgre::Convert::toOgre(position()).crossProduct(thrust_direction_);
+    auto axis = thrust_direction_.crossProduct(BtOgre::Convert::toOgre(position()));
     axis.normalise();
     return axis;
 }
