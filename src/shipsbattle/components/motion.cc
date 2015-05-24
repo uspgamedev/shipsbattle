@@ -427,7 +427,7 @@ void Motion::OnTaken() {
     }
 }
 void Motion::AddEmitter(const Ogre::Vector3& pos, const Ogre::Vector3& dir, double radius, ParticleEffect& effect) {
-    if (!system) return;
+    if (!effect.system) return;
     Ogre::ParticleEmitter* emitter;
     if (effect.emitters.empty()) {
         emitter = effect.system->getEmitter(0);
