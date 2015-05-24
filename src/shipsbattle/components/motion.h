@@ -135,11 +135,6 @@ protected:
     size_t last_active_thrusters_;
     Ogre::Vector3 generated_torque_;
 
-    Ogre::ParticleSystem* jet_system_;
-    std::vector<Ogre::ParticleEmitter*> jet_emitters_;
-    Ogre::ParticleSystem* smoke_system_;
-    std::vector<Ogre::ParticleEmitter*> smoke_emitters_;
-
     ugdk::action::mode3d::component::Body* parent_body_;
 
     /** dir is the target IMPULSE direction, therefore it is -(target movement direction) */
@@ -159,7 +154,19 @@ protected:
     void CalculateOutputValues(Eigen::VectorXd& outputs, const Eigen::VectorXd& factors);
 
     void OnTaken() override;
-    void AddEmitter(const Ogre::Vector3& pos, const Ogre::Vector3& dir, double radius, Ogre::ParticleSystem* system, std::vector<Ogre::ParticleEmitter*>& emitters);
+
+    struct ParticleEffect {
+        Ogre::ParticleSystem* system;
+        std::vector<Ogre::ParticleEmitter*> emitters;
+        double emission_rate;
+        double time_to_live;
+        double velocity_min;
+        double velocity_max;
+    };
+    ParticleEffect impulse_effects_;
+    ParticleEffect thruster_effects_;
+    void AddEmitter(const Ogre::Vector3& pos, const Ogre::Vector3& dir, double radius, ParticleEffect& effect);
+    void EnableEmitter(const ParticleEffect& effect, int emitter_index, double intensity);
 };
 
 inline std::type_index Motion::type() const {

@@ -46,7 +46,9 @@ void Motion::MotionData::Reset(const Ogre::Vector3& dir, double p, double dur, M
 }
 
 Motion::Motion() : move_stop_threshold_(0.001), turn_stop_threshold_(0.01), angle_threshold_(0.01), last_active_engines_(-1),
-last_active_thrusters_(-1), generated_torque_(Ogre::Vector3::ZERO), jet_system_(nullptr), smoke_system_(nullptr) {
+last_active_thrusters_(-1), generated_torque_(Ogre::Vector3::ZERO) {
+    impulse_effects_.system = nullptr;
+    thruster_effects_.system = nullptr;
 }
 
 Motion::~Motion() {
@@ -66,7 +68,7 @@ void Motion::AddImpulseEngine(const shared_ptr<ImpulseEngine>& engine) {
     impulse_engines_.push_back(engine);
     impulse_indexes_[engine->name()] = impulse_engines_.size() - 1;
     engine->RegisteredTo(this);
-    AddEmitter(BtOgre::Convert::toOgre(engine->position()), engine->exhaust_direction(), engine->radius(), jet_system_, jet_emitters_);
+    AddEmitter(BtOgre::Convert::toOgre(engine->position()), engine->exhaust_direction(), engine->radius(), impulse_effects_);
 }
 const shared_ptr<ImpulseEngine>& Motion::GetImpulseEngine(size_t index) {
     return impulse_engines_.at(index);
@@ -83,7 +85,7 @@ void Motion::AddThruster(const shared_ptr<Thruster>& thruster) {
     thrusters_.push_back(thruster);
     thruster_indexes_[thruster->name()] = thrusters_.size() - 1;
     thruster->RegisteredTo(this);
-    AddEmitter(BtOgre::Convert::toOgre(thruster->position()), thruster->thrust_direction(), thruster->radius(), smoke_system_, smoke_emitters_);
+    AddEmitter(BtOgre::Convert::toOgre(thruster->position()), thruster->thrust_direction(), thruster->radius(), thruster_effects_);
 }
 const shared_ptr<Thruster>& Motion::GetThruster(size_t index) {
     return thrusters_.at(index);
@@ -243,7 +245,7 @@ void Motion::DoMove(const Ogre::Vector3& dir, double power, double dt) {
     std::vector<MotionSystemPair> values;
     for (int i = 0; i < impulse_engines_.size(); i++) {
         auto engine = impulse_engines_[i];
-        auto emitter = jet_emitters_[i];
+        auto emitter = impulse_effects_.emitters[i];
         emitter->setEnabled(false);
         if (!engine->activated() || engine->disabled()) {
             continue;
@@ -266,8 +268,7 @@ void Motion::DoMove(const Ogre::Vector3& dir, double power, double dt) {
         double actual_power = move_.outputs(i) * power;
         if (actual_power > 0) {
             auto torque = engine->GenerateThrust(actual_power, dt);
-            jet_emitters_[i]->setEnabled(true);
-            //TODO: update 'intensity' of emitter
+            EnableEmitter(impulse_effects_, i, actual_power / engine->current_exhaust_power());
             if (cancel_move_torque_)
                 generated_torque_ += torque;
         }
@@ -277,7 +278,7 @@ void Motion::DoTurn(const Ogre::Vector3& axis, double power, double dt) {
     std::vector<MotionSystemPair> values;
     for (int i = 0; i < thrusters_.size(); i++) {
         auto thruster = thrusters_[i];
-        auto emitter = smoke_emitters_[i];
+        auto emitter = thruster_effects_.emitters[i];
         emitter->setEnabled(false);
         if (!thruster->activated() || thruster->disabled()) {
             continue;
@@ -298,8 +299,7 @@ void Motion::DoTurn(const Ogre::Vector3& axis, double power, double dt) {
         double actual_power = turn_.outputs(i) * power;
         if (actual_power > 0) {
             thruster->GenerateThrust(actual_power, dt);
-            smoke_emitters_[i]->setEnabled(true);
-            //TODO: update 'intensity' of emitter
+            EnableEmitter(thruster_effects_, i, actual_power / thruster->current_thrust_power());
         }
     }
 }
@@ -392,13 +392,13 @@ void Motion::CalculateOutputValues(Eigen::VectorXd& outputs, const Eigen::Vector
 
 void Motion::ForceMoveStop() {
     move_.status = STOPPED;
-    for (auto emitter : jet_emitters_)
+    for (auto emitter : impulse_effects_.emitters)
         emitter->setEnabled(false);
     parent_body_->set_linear_velocity(Ogre::Vector3::ZERO);
 }
 void Motion::ForceTurnStop() {
     turn_.status = STOPPED;
-    for (auto emitter : smoke_emitters_)
+    for (auto emitter : thruster_effects_.emitters)
         emitter->setEnabled(false);
     parent_body_->set_angular_velocity(Ogre::Vector3::ZERO);
 }
@@ -409,10 +409,10 @@ void Motion::OnTaken() {
     // create particle systems
     auto parent = owner();
     auto sceneMgr = parent->scene().manager();
-    jet_system_ = sceneMgr->createParticleSystem(parent->name() + "EngineJet", "SpaceEffects/JetEngine1");
-    smoke_system_ = sceneMgr->createParticleSystem(parent->name() + "ThrusterSmoke", "SpaceEffects/Smoke");
-    parent->node().attachObject(jet_system_);
-    parent->node().attachObject(smoke_system_);
+    impulse_effects_.system = sceneMgr->createParticleSystem(parent->name() + "EngineJet", "SpaceEffects/JetEngine1");
+    thruster_effects_.system = sceneMgr->createParticleSystem(parent->name() + "ThrusterSmoke", "SpaceEffects/Smoke");
+    parent->node().attachObject(impulse_effects_.system);
+    parent->node().attachObject(thruster_effects_.system);
 
     parent_body_ = parent->component<Body>();
 
@@ -420,20 +420,25 @@ void Motion::OnTaken() {
     //TODO: will need to refactor this since we need to do this here for any existing subsystems,
     //      and at the AddSystem methods if owner() already exists.
     for (auto& engine : impulse_engines_) {
-        AddEmitter(BtOgre::Convert::toOgre(engine->position()), engine->exhaust_direction(), engine->radius(), jet_system_, jet_emitters_);
+        AddEmitter(BtOgre::Convert::toOgre(engine->position()), engine->exhaust_direction(), engine->radius(), impulse_effects_);
     }
     for (auto& thruster : thrusters_) {
-        AddEmitter(BtOgre::Convert::toOgre(thruster->position()), thruster->thrust_direction(), thruster->radius(), smoke_system_, smoke_emitters_);
+        AddEmitter(BtOgre::Convert::toOgre(thruster->position()), thruster->thrust_direction(), thruster->radius(), thruster_effects_);
     }
 }
-void Motion::AddEmitter(const Ogre::Vector3& pos, const Ogre::Vector3& dir, double radius, Ogre::ParticleSystem* system, std::vector<Ogre::ParticleEmitter*>& emitters) {
+void Motion::AddEmitter(const Ogre::Vector3& pos, const Ogre::Vector3& dir, double radius, ParticleEffect& effect) {
     if (!system) return;
     Ogre::ParticleEmitter* emitter;
-    if (emitters.empty())
-        emitter = system->getEmitter(0);
+    if (effect.emitters.empty()) {
+        emitter = effect.system->getEmitter(0);
+        effect.emission_rate = emitter->getEmissionRate();
+        effect.time_to_live = emitter->getTimeToLive();
+        effect.velocity_min = emitter->getMinParticleVelocity();
+        effect.velocity_max = emitter->getMaxParticleVelocity();
+    }
     else {
-        emitter = system->addEmitter("Ring");
-        emitters[0]->copyParametersTo(emitter);
+        emitter = effect.system->addEmitter("Ring");
+        effect.emitters[0]->copyParametersTo(emitter);
     }
     emitter->setPosition(pos);
     emitter->setDirection(dir);
@@ -442,8 +447,17 @@ void Motion::AddEmitter(const Ogre::Vector3& pos, const Ogre::Vector3& dir, doub
     emitter->setParameter("depth", std::to_string(radius * 2));
     emitter->setParameter("inner_width", "0.05");
     emitter->setParameter("inner_height", "0.05");
-    emitter->setEnabled(false); // best to start with all emitter shutdown, then update will turn on the required ones.
-    emitters.push_back(emitter);
+    emitter->setEnabled(false); // best to start with all emitters offline, then update will turn on the required ones.
+    effect.emitters.push_back(emitter);
+}
+
+void Motion::EnableEmitter(const ParticleEffect& effect, int emitter_index, double intensity) {
+    auto emitter = effect.emitters[emitter_index];
+    emitter->setEnabled(true);
+    emitter->setParameter("emission_rate", std::to_string(effect.emission_rate * intensity));
+    emitter->setParameter("time_to_live", std::to_string(effect.time_to_live * intensity));
+    emitter->setParameter("velocity_min", std::to_string(effect.velocity_min * intensity));
+    emitter->setParameter("velocity_max", std::to_string(effect.velocity_max * intensity));
 }
 
 } // namespace components
