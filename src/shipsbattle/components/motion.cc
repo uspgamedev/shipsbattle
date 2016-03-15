@@ -107,16 +107,6 @@ void Motion::Update(double dt) {
         }
     }
 
-    if (owner()->name() == "Player") {
-        static int count = 0;
-        if (count >= 150) {
-            cout << "Turn=" << turn_.status << " AngVel= " << parent_body_->angular_velocity().x;
-            cout << ", " << parent_body_->angular_velocity().y << ", " << parent_body_->angular_velocity().z << endl;
-            count = 0;
-        }
-        count++;
-    }
-
     // MOVE
     generated_torque_ *= 0.0;
     if (move_.status == ACTIVE) {
@@ -131,7 +121,7 @@ void Motion::Update(double dt) {
     else if (move_.status == STOPPING) {
         auto stop_dir = parent_body_->linear_velocity();
         stop_dir.normalise();
-        DoMove(stop_dir, move_.power, dt);
+        DoMove(parent_body_->orientation().Inverse() *stop_dir, move_.power, dt);
         auto lin_vel = parent_body_->linear_velocity();
         lin_vel.normalise();
         if (parent_body_->linear_velocity().length() <= move_stop_threshold_ || lin_vel.dotProduct(stop_dir) <= 0.0) {
@@ -153,9 +143,9 @@ void Motion::Update(double dt) {
         }
     }
     else if (turn_.status == STOPPING) {
-        auto stop_dir = -(parent_body_->angular_velocity());
+        auto stop_dir = (-parent_body_->angular_velocity());
         stop_dir.normalise();
-        DoTurn(stop_dir, turn_.power, dt);
+        DoTurn(parent_body_->orientation().Inverse() *stop_dir, turn_.power, dt);
         auto ang_vel = -(parent_body_->angular_velocity());
         ang_vel.normalise();
         if (parent_body_->angular_velocity().length() <= turn_stop_threshold_ || ang_vel.dotProduct(stop_dir) <= 0.0) {
@@ -165,8 +155,9 @@ void Motion::Update(double dt) {
 }
 
 void Motion::MoveTowards(const Ogre::Vector3& dir, double power, double duration) {
-    Ogre::Vector3 direction = parent_body_->orientation() * (-dir);
+    Ogre::Vector3 direction = /*parent_body_->orientation() */ (-dir);
     //direction stored in move_ is the target ENGINE direction (resulting velocity will be to the other side)
+    // in local (ship) coordinates
     MotionStatus stat = ACTIVE;
     auto len = dir.length();
     if (len == 0.0 || power <= 0.0) {
@@ -175,7 +166,7 @@ void Motion::MoveTowards(const Ogre::Vector3& dir, double power, double duration
             return;
         }
         power = 1.0;
-        direction = parent_body_->linear_velocity();
+        direction = parent_body_->orientation().Inverse() * parent_body_->linear_velocity(); //converting dir from world coords to local coords
         direction.normalise();
         stat = STOPPING;
     }
@@ -201,7 +192,7 @@ void Motion::TurnTowards(const Ogre::Vector3& dir, double power, double duration
     TurnAround(Ogre::Vector3::UNIT_Z.crossProduct(dir.normalisedCopy()), power, duration);
 }
 void Motion::TurnAround(const Ogre::Vector3& axis, double power, double duration) {
-    Ogre::Vector3 ang_dir = parent_body_->orientation() * axis;
+    Ogre::Vector3 ang_dir = axis;
     MotionStatus stat = ACTIVE;
     auto len = ang_dir.length();
     if (len == 0.0 || power == 0.0) {
@@ -210,7 +201,7 @@ void Motion::TurnAround(const Ogre::Vector3& axis, double power, double duration
             return;
         }
         power = 1.0;
-        ang_dir = parent_body_->angular_velocity() * -1;
+        ang_dir = parent_body_->orientation().Inverse() * parent_body_->angular_velocity() * -1;
         ang_dir.normalise();
         stat = STOPPING;
     }

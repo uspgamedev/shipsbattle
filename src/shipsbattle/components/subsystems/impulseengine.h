@@ -51,7 +51,7 @@ protected:
 
     friend class Motion;
     void set_current_direction(const Ogre::Vector3& dir) { current_direction_ = dir; }
-    // Receives exhaust power (not percentage). Returns generated torque.
+    // Receives exhaust power (not percentage). Returns generated torque (in local coords).
     Ogre::Vector3 GenerateThrust(double power, double dt);
 };
 

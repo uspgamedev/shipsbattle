@@ -148,6 +148,7 @@ void CreateHUD(Ship& pla, Ship& enemy) {
     Ogre::Overlay* hud = overlay_mgr->create(over_name);
     hud->setZOrder(600);
 
+    /**** player hull data ***/
     Ogre::TextAreaOverlayElement* plaHullStats = static_cast<Ogre::TextAreaOverlayElement*>(overlay_mgr->createOverlayElement("TextArea", over_name + "/PlaHullStats"));
     plaHullStats->setMetricsMode(Ogre::GMM_PIXELS);
     plaHullStats->setPosition(10, 0);
@@ -165,6 +166,7 @@ void CreateHUD(Ship& pla, Ship& enemy) {
     plaArmorStats->setColour(Ogre::ColourValue::Blue);
     plaArmorStats->setCaption("PLAYER ARMOR STATS");
 
+    /**** enemy hull data ****/
     Ogre::TextAreaOverlayElement* enemyHullStats = static_cast<Ogre::TextAreaOverlayElement*>(overlay_mgr->createOverlayElement("TextArea", over_name + "/EnemyHullStats"));
     enemyHullStats->setMetricsMode(Ogre::GMM_PIXELS);
     enemyHullStats->setPosition(10, 60);
@@ -182,7 +184,7 @@ void CreateHUD(Ship& pla, Ship& enemy) {
     enemyArmorStats->setColour(Ogre::ColourValue::Blue);
     enemyArmorStats->setCaption("ENEMY ARMOR STATS");
 
-
+    /**** player/enemy hull data panel ****/ 
     Ogre::OverlayContainer* panel = static_cast<Ogre::OverlayContainer*>(overlay_mgr->createOverlayElement("Panel", over_name + "/Panel"));
     panel->setMetricsMode(Ogre::GMM_PIXELS);
     panel->setPosition(674, 0.0);
@@ -193,11 +195,43 @@ void CreateHUD(Ship& pla, Ship& enemy) {
     panel->addChild(enemyHullStats);
     panel->addChild(enemyArmorStats);
     hud->add2D(panel);
+
+    /** player motion data for debug **/
+    Ogre::TextAreaOverlayElement* moveStats = static_cast<Ogre::TextAreaOverlayElement*>(overlay_mgr->createOverlayElement("TextArea", over_name + "/MoveStats"));
+    moveStats->setMetricsMode(Ogre::GMM_PIXELS);
+    moveStats->setPosition(10, 10);
+    moveStats->setDimensions(350, 30);
+    moveStats->setFontName("testeFont");
+    moveStats->setCharHeight(16);
+    moveStats->setColour(Ogre::ColourValue::Black);
+    moveStats->setCaption("MOVEMENT STATS");
+    Ogre::TextAreaOverlayElement* turnStats = static_cast<Ogre::TextAreaOverlayElement*>(overlay_mgr->createOverlayElement("TextArea", over_name + "/TurnStats"));
+    turnStats->setMetricsMode(Ogre::GMM_PIXELS);
+    turnStats->setPosition(10, 65);
+    turnStats->setDimensions(350, 30);
+    turnStats->setFontName("testeFont");
+    turnStats->setCharHeight(16);
+    turnStats->setColour(Ogre::ColourValue::Blue);
+    turnStats->setCaption("ROTATION STATS");
+
+
+    Ogre::OverlayContainer* motionPanel = static_cast<Ogre::OverlayContainer*>(overlay_mgr->createOverlayElement("Panel", over_name + "/MotionPanel"));
+    motionPanel->setMetricsMode(Ogre::GMM_PIXELS);
+    motionPanel->setPosition(0.0, 80.0);
+    motionPanel->setDimensions(300, 120);
+    motionPanel->setMaterialName("BaseWhite");
+    motionPanel->addChild(moveStats);
+    motionPanel->addChild(turnStats);
+    hud->add2D(motionPanel);
+    /*******/
+
+
     hud->show();
 
     ourscene->AddTask(ugdk::system::Task(
-    [&pla, &enemy, plaHullStats, plaArmorStats, enemyHullStats, enemyArmorStats](double dt) {
+    [&pla, &enemy, plaHullStats, plaArmorStats, enemyHullStats, enemyArmorStats, moveStats, turnStats](double dt) {
 
+        // atualizar dados do hull
         auto func = [](Ship& ship, Ogre::TextAreaOverlayElement* hullStats, Ogre::TextAreaOverlayElement* armorStats) {
             if (ship.valid()) {
                 auto hull = ship.hull()->GetSubHull("MainHull");
@@ -222,6 +256,26 @@ void CreateHUD(Ship& pla, Ship& enemy) {
         
         func(pla, plaHullStats, plaArmorStats);
         func(enemy, enemyHullStats, enemyArmorStats);
+
+        //atualizar dados de movimento
+        if (pla.valid()) {
+            auto body = pla.body();
+            stringstream ssa;
+            ssa.precision(4);
+            ssa.setf(std::ios::fixed, std::ios::floatfield);
+            ssa << "MOVE: " << body->linear_velocity().x << " / " << body->linear_velocity().y << " / " << body->linear_velocity().z;
+            auto linearLocal = body->orientation().Inverse() * body->linear_velocity();
+            ssa << "\nrelative: " << linearLocal.x << " / " << linearLocal.y << " / " << linearLocal.z;
+            moveStats->setCaption(ssa.str());
+
+            stringstream ssh;
+            ssh.precision(4);
+            ssh.setf(std::ios::fixed, std::ios::floatfield);
+            ssh << "TURN: " << body->angular_velocity().x << " / " << body->angular_velocity().y << " / " << body->angular_velocity().z;
+            auto angularLocal = body->orientation().Inverse() * body->angular_velocity();
+            ssh << "\nrelative: " << angularLocal.x << " / " << angularLocal.y << " / " << angularLocal.z;
+            turnStats->setCaption(ssh.str());
+        }
     }));
 }
 

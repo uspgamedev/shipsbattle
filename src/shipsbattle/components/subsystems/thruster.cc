@@ -40,7 +40,9 @@ void Thruster::GenerateThrust(double power, double dt) {
     spent_energy_ += energy_consumption_ * dt * power / thrust_power_;
 
     auto body = parent()->owner()->component<Body>();
-    auto torque = rotational_axis() * power * dt;
+    // rotational_axis is in local (ship) coordinates
+    // to apply torque to body, the vector must be in global (world) coordinates.
+    auto torque = body->orientation() * rotational_axis() * power * dt;
     body->Rotate(torque);
 }
 

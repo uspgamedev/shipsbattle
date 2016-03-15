@@ -58,10 +58,13 @@ Ogre::Vector3 ImpulseEngine::GenerateThrust(double power, double dt) {
     spent_energy_ += energy_consumption_ * dt * power / exhaust_power_;
 
     auto body = parent()->owner()->component<Body>();
-    auto impulse = -current_direction_ * power * dt;
+    // current_direction_ is in local (ship) coordinates
+    // to apply impulse to body, the vector must be in global (world) coordinates.
+    auto local_impulse = (-current_direction_) * power * dt;
+    auto impulse = body->orientation() * local_impulse;
     auto pos = BtOgre::Convert::toOgre(position());
-    body->ApplyImpulse(impulse);// , pos);
-    return pos.crossProduct(impulse); //generated torque (check Bullet's apply impulse to check it out)
+    body->ApplyImpulse(impulse, pos);
+    return pos.crossProduct(local_impulse); //generated torque (check Bullet's apply impulse to check it out)
 }
 
 } // namespace subsystems

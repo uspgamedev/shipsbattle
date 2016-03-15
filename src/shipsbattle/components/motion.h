@@ -137,9 +137,9 @@ protected:
 
     ugdk::action::mode3d::component::Body* parent_body_;
 
-    /** dir is the target IMPULSE direction, therefore it is -(target movement direction) */
+    /** dir is the target IMPULSE direction in local coords, therefore it is -(target movement direction) */
     void DoMove(const Ogre::Vector3& dir, double power, double dt);
-    /** axis is the target THRUST direction, therefore it is -(target rotation axis) */
+    /** axis is the target THRUST axis (direction) in local coords, therefore it is -(target rotation axis) */
     void DoTurn(const Ogre::Vector3& axis, double power, double dt);
     void ForceMoveStop();
     void ForceTurnStop();
