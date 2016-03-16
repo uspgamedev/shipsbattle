@@ -63,7 +63,7 @@ Ogre::Vector3 ImpulseEngine::GenerateThrust(double power, double dt) {
     auto local_impulse = (-current_direction_) * power * dt;
     auto impulse = body->orientation() * local_impulse;
     auto pos = BtOgre::Convert::toOgre(position());
-    body->ApplyImpulse(impulse, pos);
+    body->ApplyImpulse(impulse);// , pos);
     return pos.crossProduct(local_impulse); //generated torque (check Bullet's apply impulse to check it out)
 }
 

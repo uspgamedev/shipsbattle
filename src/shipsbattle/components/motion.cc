@@ -31,13 +31,14 @@ namespace shipsbattle {
 namespace components {
 
 Motion::MotionData::MotionData()
-: direction(Vector3::UNIT_Z), power(0.0), duration(0.0), elapsed(0.0), status(STOPPED), update_system(false), angle_threshold(0.01)
+: direction(Vector3::ZERO), system_dir(Vector3::ZERO), power(0.0), duration(0.0), elapsed(0.0), status(STOPPED), update_system(false), angle_threshold(0.01)
 {
 
 }
 
 void Motion::MotionData::Reset(const Ogre::Vector3& dir, double p, double dur, MotionStatus stat) {
-    update_system = (dir.angleBetween(direction).valueRadians() > angle_threshold);
+    if (!dir.isZeroLength())
+        update_system = (dir.angleBetween(system_dir).valueRadians() > angle_threshold);
     direction = dir;
     power = p;
     duration = dur;
@@ -109,65 +110,93 @@ void Motion::Update(double dt) {
 
     // MOVE
     generated_torque_ *= 0.0;
-    if (move_.status == ACTIVE) {
-        if (move_.elapsed <= move_.duration) {
-            move_.elapsed += dt;
-            DoMove(move_.direction, move_.power, dt);
+    /////////*****///
+    if (move_.status != STOPPED) {
+        auto linvel = parent_body_->linear_velocity().normalisedCopy();
+        auto local_linvel = parent_body_->orientation().Inverse() * linvel;
+        Vector3 move_dir;
+        auto dir_vel_angle = (-move_.direction).angleBetween(local_linvel).valueRadians();
+        if (dir_vel_angle <= 0.0) {
+            move_dir = move_.direction;
+        }
+        else if (dir_vel_angle < angle_threshold_) {
+            move_dir = move_.direction;
+            //direction and velocity are almost the same, probably due to changing directions and the system trying to 
+            //cancel previous velocity while adding desired acceleration.
+            //In this case force body's velocity so that it doesn't flicker back and forth around desired direction.
+            auto new_vel = parent_body_->orientation() * -move_.direction * parent_body_->linear_velocity().length();
+            parent_body_->set_linear_velocity(new_vel);
         }
         else {
+            move_dir = move_.direction + local_linvel;
+        }
+        move_dir.normalise();
+        DoMove(move_dir, move_.power, dt);
+        move_.elapsed += dt;
+        if (move_.status == ACTIVE && move_.elapsed > move_.duration) {
+            StopMoving();
+        }
+        else if (move_.status == STOPPING &&
+            (parent_body_->linear_velocity().length() <= move_stop_threshold_ || parent_body_->linear_velocity().normalisedCopy().dotProduct(linvel) <= 0.0))
+        {
             ForceMoveStop();
         }
     }
-    else if (move_.status == STOPPING) {
-        auto stop_dir = parent_body_->linear_velocity();
-        stop_dir.normalise();
-        DoMove(parent_body_->orientation().Inverse() *stop_dir, move_.power, dt);
-        auto lin_vel = parent_body_->linear_velocity();
-        lin_vel.normalise();
-        if (parent_body_->linear_velocity().length() <= move_stop_threshold_ || lin_vel.dotProduct(stop_dir) <= 0.0) {
-            ForceMoveStop();
-        }
-    }
-    if (generated_torque_.length() > 0.0) {
-        //TODO: we have generated torque and should try to cancel it. Update turn status.
+    if (!generated_torque_.isZeroLength()) {
+        //TODO: we have generated torque and should try to cancel it. Update TURN status.
     }
 
     // TURN
-    if (turn_.status == ACTIVE) {
-        if (turn_.elapsed <= turn_.duration) {
-            turn_.elapsed += dt;
-            DoTurn(turn_.direction - generated_torque_, turn_.power, dt);
+    if (turn_.status != STOPPED) {
+        auto angvel = -parent_body_->angular_velocity().normalisedCopy();
+        auto local_angvel = parent_body_->orientation().Inverse() * angvel;
+        Vector3 turn_dir;
+        auto dir_vel_angle = (turn_.direction).angleBetween(-local_angvel).valueRadians();
+        if (dir_vel_angle <= 0.0) {
+            turn_dir = turn_.direction;
+        }
+        else if (dir_vel_angle < angle_threshold_) {
+            turn_dir = turn_.direction;
+            //direction and velocity are almost the same, probably due to changing directions and the system trying to 
+            //cancel previous velocity while adding desired acceleration.
+            //In this case force body's velocity so that it doesn't flicker back and forth around desired direction.
+            auto new_vel = parent_body_->orientation() * turn_.direction * parent_body_->angular_velocity().length();
+            parent_body_->set_angular_velocity(new_vel);
         }
         else {
-            ForceTurnStop();
+            turn_dir = turn_.direction + local_angvel;
         }
-    }
-    else if (turn_.status == STOPPING) {
-        auto stop_dir = (-parent_body_->angular_velocity());
-        stop_dir.normalise();
-        DoTurn(parent_body_->orientation().Inverse() *stop_dir, turn_.power, dt);
-        auto ang_vel = -(parent_body_->angular_velocity());
-        ang_vel.normalise();
-        if (parent_body_->angular_velocity().length() <= turn_stop_threshold_ || ang_vel.dotProduct(stop_dir) <= 0.0) {
+        /*auto turn_dir = turn_.direction + local_angvel;
+        if (turn_dir.isZeroLength()) {
+            turn_dir = turn_.direction;
+        }*/
+        turn_dir.normalise();
+        DoTurn(turn_dir, turn_.power, dt);
+        turn_.elapsed += dt;
+        if (turn_.status == ACTIVE && turn_.elapsed > turn_.duration) {
+            StopTurning();
+        }
+        else if (turn_.status == STOPPING &&
+            (parent_body_->angular_velocity().length() <= turn_stop_threshold_ || (-parent_body_->angular_velocity().normalisedCopy()).dotProduct(angvel) <= 0.0))
+        {
             ForceTurnStop();
         }
     }
 }
 
-void Motion::MoveTowards(const Ogre::Vector3& dir, double power, double duration) {
-    Ogre::Vector3 direction = /*parent_body_->orientation() */ (-dir);
-    //direction stored in move_ is the target ENGINE direction (resulting velocity will be to the other side)
+void Motion::MoveTowards(const Vector3& dir, double power, double duration) {
+    Vector3 direction = -dir;
+    //direction stored in move_ is the target direction (resulting ENGINE direction will be to the other side, resulting velocity will be this dir)
     // in local (ship) coordinates
     MotionStatus stat = ACTIVE;
-    auto len = dir.length();
+    auto len = dir.squaredLength();
     if (len == 0.0 || power <= 0.0) {
         if (parent_body_->linear_velocity().length() <= move_stop_threshold_) {
             ForceMoveStop();
             return;
         }
         power = 1.0;
-        direction = parent_body_->orientation().Inverse() * parent_body_->linear_velocity(); //converting dir from world coords to local coords
-        direction.normalise();
+        direction = Vector3::ZERO;
         stat = STOPPING;
     }
     else if (len != 1.0) {
@@ -194,15 +223,14 @@ void Motion::TurnTowards(const Ogre::Vector3& dir, double power, double duration
 void Motion::TurnAround(const Ogre::Vector3& axis, double power, double duration) {
     Ogre::Vector3 ang_dir = axis;
     MotionStatus stat = ACTIVE;
-    auto len = ang_dir.length();
+    auto len = ang_dir.squaredLength();
     if (len == 0.0 || power == 0.0) {
         if (parent_body_->angular_velocity().length() <= turn_stop_threshold_) {
             ForceTurnStop();
             return;
         }
         power = 1.0;
-        ang_dir = parent_body_->orientation().Inverse() * parent_body_->angular_velocity() * -1;
-        ang_dir.normalise();
+        ang_dir = Vector3::ZERO;
         stat = STOPPING;
     }
     else if (len != 1.0) {
@@ -247,11 +275,11 @@ void Motion::DoMove(const Ogre::Vector3& dir, double power, double dt) {
         emitter->setDirection(eng_dir);
     }
     
-    if (!ResolveMotionSystem(move_, dir, values, last_active_engines_)) 
-        return;
+    // if not system_ok, nothing more should be executed
+    bool system_ok = ResolveMotionSystem(move_, dir, values, last_active_engines_);
 
     // do engine update / apply impulse
-    for (int i = 0; i < impulse_engines_.size(); i++) {
+    for (int i = 0; i < impulse_engines_.size() && system_ok; i++) {
         auto engine = impulse_engines_[i];
         if (!engine->activated() || engine->disabled()) {
             continue;
@@ -278,11 +306,11 @@ void Motion::DoTurn(const Ogre::Vector3& axis, double power, double dt) {
         values.push_back(MotionSystemPair(ang_dir, thruster->current_thrust_power()));
     }
 
-    if (!ResolveMotionSystem(turn_, axis, values, last_active_thrusters_))
-        return;
+    // if not system_ok, nothing more should be executed
+    bool system_ok = ResolveMotionSystem(turn_, axis, values, last_active_thrusters_);
 
     // do engine update / apply impulse
-    for (int i = 0; i < thrusters_.size(); i++) {
+    for (int i = 0; i < thrusters_.size() && system_ok; i++) {
         auto thruster = thrusters_[i];
         if (!thruster->activated() || thruster->disabled()) {
             continue;
@@ -299,13 +327,17 @@ bool Motion::ResolveMotionSystem(MotionData& data, const Ogre::Vector3& target, 
     // this function has several FOR loops over active_engines.
     // unfortunately, at the point of this writing I could not see a way around this 
     // since the work done in one requires that the previous one has already been executed
+    if (values.size() <= 0) return false;
 
-    if ((target.angleBetween(data.direction).valueRadians() > angle_threshold_) || (last_active != values.size()) || data.update_system) {
-        cout << "ResolveMotionSystem UPDATED FACTORS start. target: " << target.x << " " << target.y << " " << target.z << endl;
+    if ((target.angleBetween(data.system_dir).valueRadians() > angle_threshold_) || (last_active != values.size()) || data.update_system) {
+        //cout << "ResolveMotionSystem UPDATED FACTORS start. target: " << target.x << " " << target.y << " " << target.z << endl;
+
+        //cout << "Angle: " << target.angleBetween(data.system_dir).valueRadians() << "/" << angle_threshold_;
+        //cout << " ||ActiveNum: " << last_active << "/" << values.size() << " ||UpdateSystem: " << data.update_system << endl;
         last_active = values.size();
         data.update_system = false;
         if (values.size() <= 0) return false;
-        //CHECK: we might need to reset data.direction with target here
+        data.system_dir = target;
 
         //get list of active engines, calculate engine factors and store maximal outputs.
         Matrix dirs = Matrix(3, values.size());
@@ -332,23 +364,22 @@ bool Motion::ResolveMotionSystem(MotionData& data, const Ogre::Vector3& target, 
         // normalize factors and remove negative coefficients
         if (data.factors.maxCoeff() <= 0.0)    return false;
         data.factors /= data.factors.maxCoeff();
-        cout << "ResolveMotionSystem UPDATED FACTORS FINAL: ";
+        //cout << "ResolveMotionSystem UPDATED FACTORS FINAL: ";
         for (int i = 0; i < values.size(); i++) {
             if (data.factors(i) < 0.0)   data.factors(i) = 0.0;
-            cout << data.factors(i) << " ";
+            //cout << data.factors(i) << " ";
         }
-        cout << endl;
-    }
-    if (values.size() <= 0) return false;
+        //cout << endl;
 
-    // calculate actual engine outputs.
-    //   doing this here prevents us from having to add extra logic to handle other cases in which 
-    //   we would need to recalculate engines output.
-    data.outputs.resize(values.size());
-    for (int i = 0; i < values.size(); i++) {
-        data.outputs(i) = values[i].output;
+        // calculate actual engine outputs.
+        //   doing this here prevents us from having to add extra logic to handle other cases in which 
+        //   we would need to recalculate engines output.
+        data.outputs.resize(values.size());
+        for (int i = 0; i < values.size(); i++) {
+            data.outputs(i) = values[i].output;
+        }
+        CalculateOutputValues(data.outputs, data.factors);
     }
-    CalculateOutputValues(data.outputs, data.factors);
     return true;
 }
 
@@ -401,7 +432,9 @@ void Motion::OnTaken() {
     auto parent = owner();
     auto sceneMgr = parent->scene().manager();
     impulse_effects_.system = sceneMgr->createParticleSystem(parent->name() + "EngineJet", "SpaceEffects/JetEngine1");
+    impulse_effects_.system->setKeepParticlesInLocalSpace(true);
     thruster_effects_.system = sceneMgr->createParticleSystem(parent->name() + "ThrusterSmoke", "SpaceEffects/Smoke");
+    thruster_effects_.system->setKeepParticlesInLocalSpace(true);
     parent->node().attachObject(impulse_effects_.system);
     parent->node().attachObject(thruster_effects_.system);
 

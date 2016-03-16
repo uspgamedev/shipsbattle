@@ -113,6 +113,7 @@ protected:
     enum MotionStatus { ACTIVE, STOPPING, STOPPED };
     struct MotionData {
         Ogre::Vector3 direction;
+        Ogre::Vector3 system_dir;
         double power;
         double duration;
         double elapsed;
